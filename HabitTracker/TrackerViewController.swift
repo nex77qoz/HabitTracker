@@ -13,7 +13,7 @@ class TrackerViewController: UIViewController {
         ]),
         TrackerCategory(title: "Здоровье", trackers: [
             Tracker(id: UUID(), name: "Сделал зарядку", color: "orange", emoji: "💪",
-                    schedule: Schedule(daysOfWeek: [true, true, true, true, true, true, true])),
+                    schedule: Schedule(daysOfWeek: [true, true, true, true, true, false, true])),
             Tracker(id: UUID(), name: "Не ел сладкого", color: "red", emoji: "🍫",
                     schedule: Schedule(daysOfWeek: [true, true, true, true, true, false, false])),
             Tracker(id: UUID(), name: "Сходил на работу пешком", color: "blue", emoji: "🦶",
@@ -211,16 +211,23 @@ extension TrackerViewController: UICollectionViewDataSource, UICollectionViewDel
                         sizeForItemAt indexPath: IndexPath) -> CGSize {
         let totalSpacing: CGFloat = 48
         let width = (collectionView.frame.width - totalSpacing) / 2
-        return CGSize(width: width, height: 100)
+        return CGSize(width: width, height: 175)
     }
 }
 
 class TrackerCell: UICollectionViewCell {
-    
+
     static let identifier = "TrackerCell"
-    
+
     // MARK: - Элементы интерфейса
-    
+
+    private let mainView: UIView = {
+        let view = UIView()
+        view.layer.cornerRadius = 12
+        view.layer.masksToBounds = true
+        return view
+    }()
+
     private let circleView: UIView = {
         let view = UIView()
         view.backgroundColor = UIColor.white.withAlphaComponent(0.3)
@@ -228,14 +235,14 @@ class TrackerCell: UICollectionViewCell {
         view.layer.masksToBounds = true
         return view
     }()
-    
+
     private let emojiLabel: UILabel = {
         let label = UILabel()
         label.font = UIFont.systemFont(ofSize: 20)
         label.textAlignment = .center
         return label
     }()
-    
+
     private let titleLabel: UILabel = {
         let label = UILabel()
         label.font = UIFont.systemFont(ofSize: 16, weight: .medium)
@@ -243,63 +250,116 @@ class TrackerCell: UICollectionViewCell {
         label.numberOfLines = 0
         return label
     }()
-    
+
+    private let daysLabel: UILabel = {
+        let label = UILabel()
+        label.font = UIFont.systemFont(ofSize: 14, weight: .medium)
+        label.textColor = .black
+        return label
+    }()
+
+    private let addButtonContainer: UIView = {
+        let view = UIView()
+        view.layer.cornerRadius = 20
+        view.layer.masksToBounds = true
+        return view
+    }()
+
+    private let addButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.setTitle("+", for: .normal)
+        button.titleLabel?.font = UIFont.systemFont(ofSize: 20, weight: .medium)
+        button.tintColor = .white
+        return button
+    }()
+
     // MARK: - Инициализаторы
-    
+
     override init(frame: CGRect) {
         super.init(frame: frame)
         contentView.layer.cornerRadius = 12
         contentView.layer.masksToBounds = true
         setupSubviews()
     }
-    
+
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-    
+
     // MARK: - Subviews и Constraints
-    
+
     private func setupSubviews() {
-        contentView.addSubview(circleView)
-        contentView.addSubview(titleLabel)
-        
+        contentView.addSubview(mainView)
+        contentView.addSubview(daysLabel)
+        contentView.addSubview(addButtonContainer)
+
+        mainView.addSubview(circleView)
+        mainView.addSubview(titleLabel)
+
         circleView.addSubview(emojiLabel)
-        
+        addButtonContainer.addSubview(addButton)
+
+        mainView.translatesAutoresizingMaskIntoConstraints = false
         circleView.translatesAutoresizingMaskIntoConstraints = false
         emojiLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        
+        daysLabel.translatesAutoresizingMaskIntoConstraints = false
+        addButtonContainer.translatesAutoresizingMaskIntoConstraints = false
+        addButton.translatesAutoresizingMaskIntoConstraints = false
+
         let circleSize: CGFloat = 32
         let padding: CGFloat = 12
-        
+
         NSLayoutConstraint.activate([
-            circleView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: padding),
-            circleView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: padding),
+            mainView.topAnchor.constraint(equalTo: contentView.topAnchor),
+            mainView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            mainView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+
+            circleView.topAnchor.constraint(equalTo: mainView.topAnchor, constant: padding),
+            circleView.leadingAnchor.constraint(equalTo: mainView.leadingAnchor, constant: padding),
             circleView.widthAnchor.constraint(equalToConstant: circleSize),
             circleView.heightAnchor.constraint(equalToConstant: circleSize),
-            
+
             emojiLabel.centerXAnchor.constraint(equalTo: circleView.centerXAnchor),
             emojiLabel.centerYAnchor.constraint(equalTo: circleView.centerYAnchor),
             emojiLabel.widthAnchor.constraint(lessThanOrEqualTo: circleView.widthAnchor, multiplier: 0.8),
             emojiLabel.heightAnchor.constraint(lessThanOrEqualTo: circleView.heightAnchor, multiplier: 0.8),
-            
-            titleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: padding),
-            titleLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -padding),
-            titleLabel.bottomAnchor.constraint(lessThanOrEqualTo: contentView.bottomAnchor, constant: -padding)
+
+            titleLabel.leadingAnchor.constraint(equalTo: mainView.leadingAnchor, constant: padding),
+            titleLabel.trailingAnchor.constraint(equalTo: mainView.trailingAnchor, constant: -padding),
+            titleLabel.bottomAnchor.constraint(equalTo: mainView.bottomAnchor, constant: -padding),
+
+            daysLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: padding),
+            daysLabel.topAnchor.constraint(equalTo: mainView.bottomAnchor, constant: 8),
+
+            addButtonContainer.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -padding),
+            addButtonContainer.centerYAnchor.constraint(equalTo: daysLabel.centerYAnchor),
+            addButtonContainer.topAnchor.constraint(equalTo: mainView.bottomAnchor, constant: padding),
+            addButtonContainer.widthAnchor.constraint(equalToConstant: 40),
+            addButtonContainer.heightAnchor.constraint(equalToConstant: 40),
+
+            addButton.centerXAnchor.constraint(equalTo: addButtonContainer.centerXAnchor),
+            addButton.centerYAnchor.constraint(equalTo: addButtonContainer.centerYAnchor),
+
+            contentView.bottomAnchor.constraint(equalTo: addButtonContainer.bottomAnchor, constant: padding)
         ])
-        
     }
-    
+
     // MARK: - Настройка ячеек
-    
+
     func configure(with tracker: Tracker) {
         titleLabel.text = tracker.name
         emojiLabel.text = tracker.emoji
-        contentView.backgroundColor = color(from: tracker.color)
+        mainView.backgroundColor = color(from: tracker.color)
+        addButtonContainer.backgroundColor = color(from: tracker.color)
+
+        // Пример подсчета количества дней
+        let daysCount = tracker.schedule.daysOfWeek.filter { $0 }.count
+        daysLabel.text = "\(daysCount) дней"
     }
-    
+
     // MARK: - Цвета
-    
+
     private func color(from colorName: String) -> UIColor {
         switch colorName.lowercased() {
             case "green":
