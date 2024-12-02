@@ -1,19 +1,22 @@
-//
-//  ViewController.swift
-//  HabitTracker
-//
-//  Created by Максим Бабкин on 01.12.2024.
-//
-
 import UIKit
 
-class ViewController: UIViewController {
-
+class ViewController: UITabBarController {
+    
+    let trackerVC = TrackerViewController()
+    let statsVC = StatsViewController()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-        // Do any additional setup after loading the view.
+        setupTabBar()
     }
-
-
+    
+    func setupTabBar() {
+        let trackersNavController = UINavigationController(rootViewController: trackerVC)
+        let statisticsNavController = UINavigationController(rootViewController: statsVC)
+        
+        trackersNavController.tabBarItem = UITabBarItem(title: "Трекер", image: UIImage(named: "trackers"), tag: 0)
+        statisticsNavController.tabBarItem = UITabBarItem(title: "Статистика", image: UIImage(named: "stats"), tag: 1)
+        
+        viewControllers = [trackersNavController, statisticsNavController]
+    }
 }
-
