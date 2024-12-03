@@ -36,6 +36,11 @@ final class TrackerViewController: UIViewController {
     ]
     
     private var completedTrackers: [TrackerRecord] = []
+    private var filteredCategories: [TrackerCategory] {
+        categories.filter { category in
+            category.trackers.contains { $0.schedule.daysOfWeek[currentWeekday] }
+        }
+    }
     
     private var currentWeekday: Int {
         Calendar.current.component(.weekday, from: datePicker.date) - 1
@@ -143,14 +148,14 @@ final class TrackerViewController: UIViewController {
             titleLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             
             searchBar.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 8),
-            searchBar.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
-            searchBar.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            searchBar.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 8),
+            searchBar.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -8),
             
             collectionView.topAnchor.constraint(equalTo: searchBar.bottomAnchor, constant: 16),
             collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             collectionView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
-
+            
             placeholderStackView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             placeholderStackView.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -20)
         ])
@@ -178,9 +183,8 @@ final class TrackerViewController: UIViewController {
     // MARK: - Вспомогательные методы
     
     private func updatePlaceholderVisibility() {
-        let weekday = currentWeekday
-        let trackersForCurrentDay = categories.flatMap { category in
-            category.trackers.filter { $0.schedule.daysOfWeek[weekday] }
+        let trackersForCurrentDay = filteredCategories.flatMap { category in
+            category.trackers.filter { $0.schedule.daysOfWeek[currentWeekday] }
         }
         
         let hasTrackersForCurrentDay = !trackersForCurrentDay.isEmpty
@@ -194,22 +198,25 @@ final class TrackerViewController: UIViewController {
 
 extension TrackerViewController: UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     
+    // Количество секций
     func numberOfSections(in collectionView: UICollectionView) -> Int {
-        return categories.count
+        return filteredCategories.count
     }
     
+    // Количество элементов в секции
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         let weekday = currentWeekday
-        return categories[section].trackers.filter { $0.schedule.daysOfWeek[weekday] }.count
+        return filteredCategories[section].trackers.filter { $0.schedule.daysOfWeek[weekday] }.count
     }
     
+    // Настройка ячейки
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: TrackerCell.identifier, for: indexPath) as? TrackerCell else {
             return UICollectionViewCell()
         }
         
         let weekday = currentWeekday
-        let filteredTrackers = categories[indexPath.section].trackers.filter { $0.schedule.daysOfWeek[weekday] }
+        let filteredTrackers = filteredCategories[indexPath.section].trackers.filter { $0.schedule.daysOfWeek[weekday] }
         let tracker = filteredTrackers[indexPath.item]
         
         // Определяем, выполнен ли трекер на выбранную дату
@@ -229,7 +236,7 @@ extension TrackerViewController: UICollectionViewDataSource, UICollectionViewDel
         return cell
     }
     
-    // Заголовок
+    // Настройка заголовка секции
     func collectionView(_ collectionView: UICollectionView, viewForSupplementaryElementOfKind kind: String,
                         at indexPath: IndexPath) -> UICollectionReusableView {
         guard kind == UICollectionView.elementKindSectionHeader,
@@ -238,7 +245,7 @@ extension TrackerViewController: UICollectionViewDataSource, UICollectionViewDel
                                                                                for: indexPath) as? TrackerHeaderView else {
             return UICollectionReusableView()
         }
-        headerView.titleLabel.text = categories[indexPath.section].title
+        headerView.titleLabel.text = filteredCategories[indexPath.section].title
         return headerView
     }
     
