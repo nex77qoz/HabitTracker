@@ -258,14 +258,14 @@ class TrackerCell: UICollectionViewCell {
         return label
     }()
 
-    private let addButtonContainer: UIView = {
+    private let completeButtonContainer: UIView = {
         let view = UIView()
         view.layer.cornerRadius = 20
         view.layer.masksToBounds = true
         return view
     }()
 
-    private let addButton: UIButton = {
+    private let completeButton: UIButton = {
         let button = UIButton(type: .system)
         button.setTitle("+", for: .normal)
         button.titleLabel?.font = UIFont.systemFont(ofSize: 20, weight: .medium)
@@ -291,21 +291,21 @@ class TrackerCell: UICollectionViewCell {
     private func setupSubviews() {
         contentView.addSubview(mainView)
         contentView.addSubview(daysLabel)
-        contentView.addSubview(addButtonContainer)
+        contentView.addSubview(completeButtonContainer)
 
         mainView.addSubview(circleView)
         mainView.addSubview(titleLabel)
 
         circleView.addSubview(emojiLabel)
-        addButtonContainer.addSubview(addButton)
+        completeButtonContainer.addSubview(completeButton)
 
         mainView.translatesAutoresizingMaskIntoConstraints = false
         circleView.translatesAutoresizingMaskIntoConstraints = false
         emojiLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         daysLabel.translatesAutoresizingMaskIntoConstraints = false
-        addButtonContainer.translatesAutoresizingMaskIntoConstraints = false
-        addButton.translatesAutoresizingMaskIntoConstraints = false
+        completeButtonContainer.translatesAutoresizingMaskIntoConstraints = false
+        completeButton.translatesAutoresizingMaskIntoConstraints = false
 
         let circleSize: CGFloat = 32
         let padding: CGFloat = 12
@@ -332,16 +332,16 @@ class TrackerCell: UICollectionViewCell {
             daysLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: padding),
             daysLabel.topAnchor.constraint(equalTo: mainView.bottomAnchor, constant: 8),
 
-            addButtonContainer.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -padding),
-            addButtonContainer.centerYAnchor.constraint(equalTo: daysLabel.centerYAnchor),
-            addButtonContainer.topAnchor.constraint(equalTo: mainView.bottomAnchor, constant: padding),
-            addButtonContainer.widthAnchor.constraint(equalToConstant: 40),
-            addButtonContainer.heightAnchor.constraint(equalToConstant: 40),
+            completeButtonContainer.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -padding),
+            completeButtonContainer.centerYAnchor.constraint(equalTo: daysLabel.centerYAnchor),
+            completeButtonContainer.topAnchor.constraint(equalTo: mainView.bottomAnchor, constant: padding),
+            completeButtonContainer.widthAnchor.constraint(equalToConstant: 40),
+            completeButtonContainer.heightAnchor.constraint(equalToConstant: 40),
 
-            addButton.centerXAnchor.constraint(equalTo: addButtonContainer.centerXAnchor),
-            addButton.centerYAnchor.constraint(equalTo: addButtonContainer.centerYAnchor),
+            completeButton.centerXAnchor.constraint(equalTo: completeButtonContainer.centerXAnchor),
+            completeButton.centerYAnchor.constraint(equalTo: completeButtonContainer.centerYAnchor),
 
-            contentView.bottomAnchor.constraint(equalTo: addButtonContainer.bottomAnchor, constant: padding)
+            contentView.bottomAnchor.constraint(equalTo: completeButtonContainer.bottomAnchor, constant: padding)
         ])
     }
 
@@ -351,7 +351,7 @@ class TrackerCell: UICollectionViewCell {
         titleLabel.text = tracker.name
         emojiLabel.text = tracker.emoji
         mainView.backgroundColor = color(from: tracker.color)
-        addButtonContainer.backgroundColor = color(from: tracker.color)
+        completeButtonContainer.backgroundColor = color(from: tracker.color)
 
         // Пример подсчета количества дней
         let daysCount = tracker.schedule.daysOfWeek.filter { $0 }.count

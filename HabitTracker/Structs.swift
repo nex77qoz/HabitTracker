@@ -19,6 +19,6 @@ struct TrackerRecord {
 }
 
 struct Schedule {
-    let daysOfWeek: [Bool] // Массив из 7 элементов, где true означает, что трекер активен в этот день недели
+    let daysOfWeek: [Bool]
 }
 
