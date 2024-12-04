@@ -130,10 +130,17 @@ final class TrackerViewController: UIViewController {
     // MARK: - Обработчики действий
     
     @objc private func showAddTracker() {
-        let alert = UIAlertController(title: "Тестовый алерт", message: "Кнопка нажата", preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "OK", style: .default))
-        present(alert, animated: true)
-    }
+            let createTrackerVC = CreateTrackerViewController()
+            createTrackerVC.modalPresentationStyle = .pageSheet
+            
+            if let sheet = createTrackerVC.sheetPresentationController {
+                sheet.detents = [.large()]
+                sheet.prefersGrabberVisible = true
+                sheet.preferredCornerRadius = 20
+            }
+            
+            present(createTrackerVC, animated: true, completion: nil)
+        }
     
     @objc private func datePickerValueChanged(_ sender: UIDatePicker) {
         presenter.datePickerValueChanged(date: sender.date)
@@ -154,4 +161,3 @@ extension TrackerViewController: TrackerViewProtocol {
         collectionView.reloadItems(at: indexPaths)
     }
 }
-
