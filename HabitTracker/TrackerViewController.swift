@@ -1,39 +1,17 @@
+//
+//  TrackerViewController.swift
 import UIKit
 
-// MARK: - TrackerViewController
-
-class TrackerViewController: UIViewController {
+final class TrackerViewController: UIViewController {
     
-    // MARK: - Свойства
-    
-    private var categories: [TrackerCategory] = [
-        TrackerCategory(title: "Домашний уют", trackers: [
-            Tracker(id: UUID(), name: "Поливать растения", color: "green", emoji: "🪴",
-                    schedule: Schedule(daysOfWeek: [true, false, true, false, true, false, true]))
-        ]),
-        TrackerCategory(title: "Здоровье", trackers: [
-            Tracker(id: UUID(), name: "Сделал зарядку", color: "orange", emoji: "💪",
-                    schedule: Schedule(daysOfWeek: [true, true, true, true, true, true, true])),
-            Tracker(id: UUID(), name: "Не ел сладкого", color: "red", emoji: "🍫",
-                    schedule: Schedule(daysOfWeek: [true, true, true, true, true, false, false])),
-            Tracker(id: UUID(), name: "Сходил на работу пешком", color: "blue", emoji: "🦶",
-                    schedule: Schedule(daysOfWeek: [true, true, true, true, true, false, false]))
-        ])
-    ]
-    
-    private var completedTrackers: [TrackerRecord] = []
-    private var currentWeekday: Int {
-        return Calendar.current.component(.weekday, from: datePicker.date) - 1
-    }
-    
-    // MARK: - Интерфейс
+    // MARK: - UI-компоненты
     
     private lazy var datePicker: UIDatePicker = {
         let picker = UIDatePicker()
         picker.datePickerMode = .date
         picker.preferredDatePickerStyle = .compact
         picker.locale = Locale(identifier: "ru_RU")
-        picker.addTarget(self, action: #selector(datePickerValueChanged(_:)), for: .valueChanged)
+        picker.addTarget(self, action: #selector(datePickerValueChanged), for: .valueChanged)
         return picker
     }()
     
@@ -59,8 +37,8 @@ class TrackerViewController: UIViewController {
         
         let collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
         collectionView.backgroundColor = .white
-        collectionView.dataSource = self
-        collectionView.delegate = self
+        collectionView.dataSource = presenter
+        collectionView.delegate = presenter
         collectionView.register(TrackerCell.self, forCellWithReuseIdentifier: TrackerCell.identifier)
         collectionView.register(TrackerHeaderView.self,
                                 forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader,
@@ -68,23 +46,32 @@ class TrackerViewController: UIViewController {
         return collectionView
     }()
     
-    // Плейсхолдеры
-    private let starImageView: UIImageView = {
-        let imageView = UIImageView()
-        imageView.image = UIImage(named: "star")
-        imageView.contentMode = .scaleAspectFit
-        imageView.isHidden = true
-        return imageView
+    private let placeholderStackView: UIStackView = {
+        let stackView = UIStackView()
+        stackView.axis = .vertical
+        stackView.alignment = .center
+        stackView.spacing = 8
+        stackView.isHidden = true
+        
+        let starImageView = UIImageView(image: UIImage(named: "star"))
+        starImageView.contentMode = .scaleAspectFit
+        starImageView.widthAnchor.constraint(equalToConstant: 80).isActive = true
+        starImageView.heightAnchor.constraint(equalToConstant: 80).isActive = true
+        
+        let placeholderLabel = UILabel()
+        placeholderLabel.text = "Что будем отслеживать?"
+        placeholderLabel.textAlignment = .center
+        placeholderLabel.font = .systemFont(ofSize: 12, weight: .medium)
+        
+        stackView.addArrangedSubview(starImageView)
+        stackView.addArrangedSubview(placeholderLabel)
+        
+        return stackView
     }()
     
-    private let placeholderLabel: UILabel = {
-        let label = UILabel()
-        label.text = "Что будем отслеживать?"
-        label.textAlignment = .center
-        label.font = .systemFont(ofSize: 12, weight: .medium)
-        label.isHidden = true
-        return label
-    }()
+    // MARK: - Presenter
+    
+    private lazy var presenter = TrackerPresenter(view: self)
     
     // MARK: - Lifecycle
     
@@ -92,20 +79,29 @@ class TrackerViewController: UIViewController {
         super.viewDidLoad()
         setupUI()
         setupNavigationBar()
+        presenter.viewDidLoad()
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        updatePlaceholderVisibility()
+        presenter.updatePlaceholderVisibility()
     }
     
-    // MARK: - Setup Methods
+    // MARK: - Настройка интерфейса
     
     private func setupUI() {
         view.backgroundColor = .white
         
-        [titleLabel, searchBar, collectionView, starImageView, placeholderLabel].forEach {
-            view.addSubview($0)
+        view.addSubview(titleLabel)
+        view.addSubview(searchBar)
+        view.addSubview(collectionView)
+        view.addSubview(placeholderStackView)
+        
+        setupConstraints()
+    }
+    
+    private func setupConstraints() {
+        [titleLabel, searchBar, collectionView, placeholderStackView].forEach {
             $0.translatesAutoresizingMaskIntoConstraints = false
         }
         
@@ -114,241 +110,56 @@ class TrackerViewController: UIViewController {
             titleLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             
             searchBar.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 8),
-            searchBar.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
-            searchBar.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            searchBar.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 8),
+            searchBar.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -8),
             
             collectionView.topAnchor.constraint(equalTo: searchBar.bottomAnchor, constant: 16),
             collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            collectionView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
             
-            starImageView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            starImageView.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -20),
-            starImageView.widthAnchor.constraint(equalToConstant: 80),
-            starImageView.heightAnchor.constraint(equalToConstant: 80),
-            
-            placeholderLabel.topAnchor.constraint(equalTo: starImageView.bottomAnchor, constant: 8),
-            placeholderLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor)
+            placeholderStackView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            placeholderStackView.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -20)
         ])
     }
     
     private func setupNavigationBar() {
         let plusImage = UIImage(named: "plus")?.withRenderingMode(.alwaysOriginal)
         navigationItem.leftBarButtonItem = UIBarButtonItem(image: plusImage, style: .plain, target: self, action: #selector(showAddTracker))
-        
         navigationItem.rightBarButtonItem = UIBarButtonItem(customView: datePicker)
     }
     
-    // MARK: - Actions
+    // MARK: - Обработчики действий
     
     @objc private func showAddTracker() {
-        let alert = UIAlertController(title: "Тестовый алерт", message: "Кнопка нажата", preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "OK", style: .default))
-        present(alert, animated: true)
-    }
+            let createTrackerVC = CreateTrackerViewController()
+            createTrackerVC.modalPresentationStyle = .pageSheet
+            
+            if let sheet = createTrackerVC.sheetPresentationController {
+                sheet.detents = [.large()]
+                sheet.prefersGrabberVisible = true
+                sheet.preferredCornerRadius = 20
+            }
+            
+            present(createTrackerVC, animated: true, completion: nil)
+        }
     
     @objc private func datePickerValueChanged(_ sender: UIDatePicker) {
+        presenter.datePickerValueChanged(date: sender.date)
+    }
+}
+
+extension TrackerViewController: TrackerViewProtocol {
+    func reloadCollectionView() {
         collectionView.reloadData()
     }
     
-    // MARK: - Helper Methods
-    
-    private func updatePlaceholderVisibility() {
-        let hasCategories = !categories.isEmpty
-        collectionView.isHidden = !hasCategories
-        starImageView.isHidden = hasCategories
-        placeholderLabel.isHidden = hasCategories
-    }
-}
-
-// MARK: - UICollectionView DataSource & Delegate
-
-extension TrackerViewController: UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
-    
-    func numberOfSections(in collectionView: UICollectionView) -> Int {
-        return categories.count
+    func updatePlaceholderVisibility(isHidden: Bool) {
+        collectionView.isHidden = !isHidden
+        placeholderStackView.isHidden = isHidden
     }
     
-    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        let weekday = currentWeekday
-        return categories[section].trackers.filter { $0.schedule.daysOfWeek[weekday] }.count
-    }
-    
-    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: TrackerCell.identifier, for: indexPath) as? TrackerCell else {
-            return UICollectionViewCell()
-        }
-        
-        let weekday = currentWeekday
-        let filteredTrackers = categories[indexPath.section].trackers.filter { $0.schedule.daysOfWeek[weekday] }
-        let tracker = filteredTrackers[indexPath.item]
-        cell.configure(with: tracker)
-        
-        return cell
-    }
-    
-    // Заголовок
-    func collectionView(_ collectionView: UICollectionView, viewForSupplementaryElementOfKind kind: String,
-                        at indexPath: IndexPath) -> UICollectionReusableView {
-        guard kind == UICollectionView.elementKindSectionHeader,
-              let headerView = collectionView.dequeueReusableSupplementaryView(ofKind: kind,
-                                                                               withReuseIdentifier: TrackerHeaderView.identifier,
-                                                                               for: indexPath) as? TrackerHeaderView else {
-            return UICollectionReusableView()
-        }
-        headerView.titleLabel.text = categories[indexPath.section].title
-        return headerView
-    }
-    
-    // Размер Заголовка
-    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout,
-                        referenceSizeForHeaderInSection section: Int) -> CGSize {
-        return CGSize(width: collectionView.frame.width, height: 50)
-    }
-    
-    // Размер ячеек
-    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout,
-                        sizeForItemAt indexPath: IndexPath) -> CGSize {
-        let totalSpacing: CGFloat = 48
-        let width = (collectionView.frame.width - totalSpacing) / 2
-        return CGSize(width: width, height: 100)
-    }
-}
-
-class TrackerCell: UICollectionViewCell {
-    
-    static let identifier = "TrackerCell"
-    
-    // MARK: - Элементы интерфейса
-    
-    private let circleView: UIView = {
-        let view = UIView()
-        view.backgroundColor = UIColor.white.withAlphaComponent(0.3)
-        view.layer.cornerRadius = 16 // Половина ширины и высоты чтобы сделать круг
-        view.layer.masksToBounds = true
-        return view
-    }()
-    
-    private let emojiLabel: UILabel = {
-        let label = UILabel()
-        label.font = UIFont.systemFont(ofSize: 20)
-        label.textAlignment = .center
-        return label
-    }()
-    
-    private let titleLabel: UILabel = {
-        let label = UILabel()
-        label.font = UIFont.systemFont(ofSize: 16, weight: .medium)
-        label.textColor = .white
-        label.numberOfLines = 0
-        return label
-    }()
-    
-    // MARK: - Инициализаторы
-    
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-        contentView.layer.cornerRadius = 12
-        contentView.layer.masksToBounds = true
-        setupSubviews()
-    }
-    
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-    
-    // MARK: - Subviews и Constraints
-    
-    private func setupSubviews() {
-        contentView.addSubview(circleView)
-        contentView.addSubview(titleLabel)
-        
-        circleView.addSubview(emojiLabel)
-        
-        circleView.translatesAutoresizingMaskIntoConstraints = false
-        emojiLabel.translatesAutoresizingMaskIntoConstraints = false
-        titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        
-        let circleSize: CGFloat = 32
-        let padding: CGFloat = 12
-        
-        NSLayoutConstraint.activate([
-            circleView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: padding),
-            circleView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: padding),
-            circleView.widthAnchor.constraint(equalToConstant: circleSize),
-            circleView.heightAnchor.constraint(equalToConstant: circleSize),
-            
-            emojiLabel.centerXAnchor.constraint(equalTo: circleView.centerXAnchor),
-            emojiLabel.centerYAnchor.constraint(equalTo: circleView.centerYAnchor),
-            emojiLabel.widthAnchor.constraint(lessThanOrEqualTo: circleView.widthAnchor, multiplier: 0.8),
-            emojiLabel.heightAnchor.constraint(lessThanOrEqualTo: circleView.heightAnchor, multiplier: 0.8),
-            
-            titleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: padding),
-            titleLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -padding),
-            titleLabel.bottomAnchor.constraint(lessThanOrEqualTo: contentView.bottomAnchor, constant: -padding)
-        ])
-        
-    }
-    
-    // MARK: - Настройка ячеек
-    
-    func configure(with tracker: Tracker) {
-        titleLabel.text = tracker.name
-        emojiLabel.text = tracker.emoji
-        contentView.backgroundColor = color(from: tracker.color)
-    }
-    
-    // MARK: - Цвета
-    
-    private func color(from colorName: String) -> UIColor {
-        switch colorName.lowercased() {
-            case "green":
-                return UIColor.systemGreen
-            case "orange":
-                return UIColor.systemOrange
-            case "red":
-                return UIColor.systemRed
-            case "blue":
-                return UIColor.systemBlue
-            case "purple":
-                return UIColor.systemPurple
-            case "yellow":
-                return UIColor.systemYellow
-            default:
-                return UIColor.systemGray5
-        }
-    }
-}
-
-// MARK: - TrackerHeaderView
-
-class TrackerHeaderView: UICollectionReusableView {
-    
-    static let identifier = "TrackerHeaderView"
-    
-    let titleLabel: UILabel = {
-        let label = UILabel()
-        label.font = .systemFont(ofSize: 19, weight: .bold)
-        label.textColor = .black
-        return label
-    }()
-    
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-        setupSubviews()
-    }
-    
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-    
-    private func setupSubviews() {
-        addSubview(titleLabel)
-        titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        
-        NSLayoutConstraint.activate([
-            titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
-            titleLabel.centerYAnchor.constraint(equalTo: centerYAnchor)
-        ])
+    func reloadItems(at indexPaths: [IndexPath]) {
+        collectionView.reloadItems(at: indexPaths)
     }
 }
