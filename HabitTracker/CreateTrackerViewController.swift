@@ -1,3 +1,5 @@
+//
+//  CreateTrackerViewController.swift
 import UIKit
 
 final class CreateTrackerViewController: UIViewController {
@@ -19,6 +21,7 @@ final class CreateTrackerViewController: UIViewController {
         button.backgroundColor = .black
         button.layer.cornerRadius = 10
         button.titleLabel?.font = UIFont.systemFont(ofSize: 18, weight: .medium)
+        button.addTarget(self, action: #selector(habitButtonTapped), for: .touchUpInside)
         return button
     }()
     
@@ -29,6 +32,7 @@ final class CreateTrackerViewController: UIViewController {
         button.backgroundColor = .black
         button.layer.cornerRadius = 10
         button.titleLabel?.font = UIFont.systemFont(ofSize: 18, weight: .medium)
+        button.addTarget(self, action: #selector(irregularEventButtonTapped), for: .touchUpInside)
         return button
     }()
     
@@ -73,5 +77,31 @@ final class CreateTrackerViewController: UIViewController {
             irregularEventButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             irregularEventButton.heightAnchor.constraint(equalToConstant: 60)
         ])
+    }
+    
+    // MARK: - Actions
+    
+    @objc private func habitButtonTapped() {
+        let createScheduledEventVC = CreateScheduledEventViewController()
+        createScheduledEventVC.modalPresentationStyle = .pageSheet
+        
+        if let sheet = createScheduledEventVC.sheetPresentationController {
+            sheet.detents = [.large()]
+            sheet.prefersGrabberVisible = true
+            sheet.preferredCornerRadius = 20
+        }
+        present(createScheduledEventVC, animated: true, completion: nil)
+    }
+    
+    @objc private func irregularEventButtonTapped() {
+        let createIrregularEventVC = CreateIrregularEventViewController()
+        createIrregularEventVC.modalPresentationStyle = .pageSheet
+        
+        if let sheet = createIrregularEventVC.sheetPresentationController {
+            sheet.detents = [.large()]
+            sheet.prefersGrabberVisible = true
+            sheet.preferredCornerRadius = 20
+        }
+        present(createIrregularEventVC, animated: true, completion: nil)
     }
 }

@@ -1,3 +1,5 @@
+//
+//  TrackerPresenter.swift
 import UIKit
 
 protocol TrackerViewProtocol: AnyObject {
@@ -18,6 +20,7 @@ class TrackerPresenter: NSObject {
         self.view = view
         super.init()
         setupData()
+        NotificationCenter.default.addObserver(self, selector: #selector(didCreateTracker(_:)), name: .didCreateTracker, object: nil)
     }
     
     func viewDidLoad() {
@@ -47,8 +50,26 @@ class TrackerPresenter: NSObject {
     
     private var filteredCategories: [TrackerCategory] {
         categories.filter { category in
-            category.trackers.contains { $0.schedule.daysOfWeek[currentWeekday] }
+            category.trackers.contains { tracker in
+                if tracker.isIrregular {
+                    return Calendar.current.isDate(currentDate, inSameDayAs: Date())
+                } else {
+                    return tracker.schedule?.daysOfWeek[currentWeekday] ?? false
+                }
+            }
         }
+    }
+    
+    @objc private func didCreateTracker(_ notification: Notification) {
+        guard let tracker = notification.object as? Tracker,
+              let category = notification.userInfo?["category"] as? TrackerCategory else { return }
+        
+        if let index = categories.firstIndex(where: { $0.title == category.title }) {
+            categories[index].trackers.append(tracker)
+        } else {
+            categories.append(TrackerCategory(title: category.title, trackers: [tracker]))
+        }
+        view?.reloadCollectionView()
     }
     
     func datePickerValueChanged(date: Date) {
@@ -59,7 +80,7 @@ class TrackerPresenter: NSObject {
     
     func updatePlaceholderVisibility() {
         let trackersForCurrentDay = filteredCategories.flatMap { category in
-            category.trackers.filter { $0.schedule.daysOfWeek[currentWeekday] }
+            category.trackers.filter { $0.schedule?.daysOfWeek[currentWeekday] ?? false }
         }
         
         let hasTrackersForCurrentDay = !trackersForCurrentDay.isEmpty
@@ -77,8 +98,16 @@ extension TrackerPresenter: UICollectionViewDataSource, UICollectionViewDelegate
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         let weekday = currentWeekday
-        return filteredCategories[section].trackers.filter { $0.schedule.daysOfWeek[weekday] }.count
+        return filteredCategories[section].trackers.filter { tracker in
+            if tracker.isIrregular {
+                return Calendar.current.isDate(currentDate, inSameDayAs: Date())
+            } else {
+                return tracker.schedule?.daysOfWeek[weekday] ?? false
+            }
+        }.count
     }
+
+
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         
@@ -87,7 +116,13 @@ extension TrackerPresenter: UICollectionViewDataSource, UICollectionViewDelegate
         }
         
         let weekday = currentWeekday
-        let filteredTrackers = filteredCategories[indexPath.section].trackers.filter { $0.schedule.daysOfWeek[weekday] }
+        let filteredTrackers = filteredCategories[indexPath.section].trackers.filter { tracker in
+            if tracker.isIrregular {
+                return Calendar.current.isDate(currentDate, inSameDayAs: Date())
+            } else {
+                return tracker.schedule?.daysOfWeek[weekday] ?? false
+            }
+        }
         let tracker = filteredTrackers[indexPath.item]
         
         let selectedDate = currentDate.startOfDay()
