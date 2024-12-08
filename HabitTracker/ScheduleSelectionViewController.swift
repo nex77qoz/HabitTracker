@@ -14,7 +14,7 @@ final class ScheduleSelectionViewController: UIViewController, UITableViewDelega
     }()
     
     private let tableView = UITableView(frame: .zero, style: .plain)
-    private let doneButton = UIButton.roundedButton(
+    private lazy var doneButton = UIButton.roundedButton(
         title: "Готово",
         backgroundColor: .black,
         titleColor: .white,

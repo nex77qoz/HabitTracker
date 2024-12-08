@@ -13,13 +13,13 @@ final class CreateTrackerViewController: UIViewController {
         label.textAlignment = .center
         return label
     }()
-    private let habitButton = UIButton.roundedButton(
+    private lazy var habitButton = UIButton.roundedButton(
         title: "Привычка",
         backgroundColor: .black,
         titleColor: .white,
         selector: #selector(habitButtonTapped), target: self
     )
-    private let irregularEventButton = UIButton.roundedButton(
+    private lazy var irregularEventButton = UIButton.roundedButton(
         title: "Нерегулярное событие",
         backgroundColor: .black,
         titleColor: .white,

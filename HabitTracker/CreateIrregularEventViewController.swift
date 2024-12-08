@@ -3,17 +3,18 @@
 
 import UIKit
 
-final class CreateIrregularEventViewController: UIViewController, CategorySelectionDelegate {
-    
-    // MARK: - UI-компоненты
-    
+final class CreateIrregularEventViewController: UIViewController, CategorySelectionDelegate, UITextFieldDelegate {
+
+    // MARK: - UI Components
+
     private let titleLabel: UILabel = {
         let label = UILabel()
         label.text = "Новое нерегулярное событие"
         label.font = UIFont.systemFont(ofSize: 16, weight: .medium)
+        label.textAlignment = .center
         return label
     }()
-    
+
     private let nameTextField: UITextField = {
         let textField = UITextField()
         textField.placeholder = "Введите название трекера"
@@ -23,170 +24,220 @@ final class CreateIrregularEventViewController: UIViewController, CategorySelect
         textField.leftViewMode = .always
         return textField
     }()
-    
-    private let categoryButton = UIButton.roundedButton(
-        title: "Выбрать категорию",
-        backgroundColor: .backgroundDay,
-        titleColor: .black,
-        selector: #selector(selectCategory),
-        target: self
-    )
-    
+
+    private let categoryTableView: UITableView = {
+        let tableView = UITableView(frame: .zero, style: .plain)
+        tableView.isScrollEnabled = false
+        tableView.layer.cornerRadius = 16
+        tableView.backgroundColor = .backgroundDay
+        tableView.separatorStyle = .none
+        return tableView
+    }()
+
     private let emojiLabel: UILabel = {
         let label = UILabel()
         label.text = "Emoji"
         label.font = UIFont.systemFont(ofSize: 16)
         return label
     }()
-    
+
     private let emojiCollectionView: UICollectionView = {
         let layout = UICollectionViewFlowLayout()
         layout.scrollDirection = .vertical
-        layout.itemSize = CGSize(width: 40, height: 40)
+        layout.itemSize = CGSize(width: 52, height: 52)
         layout.minimumInteritemSpacing = 8
         layout.minimumLineSpacing = 8
-        
+
         let collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
         collectionView.register(EmojiCell.self, forCellWithReuseIdentifier: EmojiCell.identifier)
         collectionView.backgroundColor = .white
         return collectionView
     }()
     
+    private var emojiCollectionViewHeightConstraint: NSLayoutConstraint!
+
     private let colorLabel: UILabel = {
         let label = UILabel()
         label.text = "Цвет"
         label.font = UIFont.systemFont(ofSize: 16)
         return label
     }()
-    
+
     private let colorCollectionView: UICollectionView = {
         let layout = UICollectionViewFlowLayout()
         layout.scrollDirection = .vertical
-        layout.itemSize = CGSize(width: 40, height: 40)
-        layout.minimumInteritemSpacing = 8
-        layout.minimumLineSpacing = 8
-        
+        layout.itemSize = CGSize(width: 52, height: 52)
+        layout.minimumInteritemSpacing = 5
+        layout.minimumLineSpacing = 0
+
         let collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
         collectionView.register(ColorCell.self, forCellWithReuseIdentifier: ColorCell.identifier)
         collectionView.backgroundColor = .white
         return collectionView
     }()
     
-    private let cancelButton = UIButton.roundedButton(
+    private var colorCollectionViewHeightConstraint: NSLayoutConstraint!
+
+    private lazy var cancelButton = UIButton.roundedButton(
         title: "Отмена",
         backgroundColor: .backgroundDay,
         titleColor: .systemRed,
         selector: #selector(cancelButtonTapped),
         target: self
     )
-    
-    private let createButton = UIButton.roundedButton(
+
+    private lazy var createButton = UIButton.roundedButton(
         title: "Создать",
-        backgroundColor: .blackDay,
+        backgroundColor: .gray,
         titleColor: .white,
         selector: #selector(createButtonTapped),
         target: self
     )
-    
-    private let mainStackView: UIStackView = {
-        let stack = UIStackView()
-        stack.axis = .vertical
-        stack.spacing = 16
-        stack.alignment = .fill
-        stack.distribution = .equalSpacing
-        return stack
-    }()
-    
-    private let buttonsStackView: UIStackView = {
-        let stackView = UIStackView()
-        stackView.axis = .horizontal
-        stackView.spacing = 16
-        stackView.alignment = .fill
-        stackView.distribution = .fillEqually
-        return stackView
-    }()
-    
-    // MARK: - Данные
-    
+
+    // MARK: - Data
+
     private let emojis = Emojis.list
     private let colors = Colors.list
-    
+
     private var selectedEmoji: String?
     private var selectedColor: String?
     private var selectedCategory: TrackerCategory?
-    
+
+    // MARK: - Constants
+
+    private let nameTextFieldMaxLength = 38
+
     // MARK: - Lifecycle
-    
+
     override func viewDidLoad() {
         super.viewDidLoad()
         setupView()
         setupConstraints()
-        configureButtons()
+        configureViews()
+        setupTextFieldDelegate()
+        nameTextField.addTarget(self, action: #selector(textFieldDidChange), for: .editingChanged)
+        updateCreateButtonState()
+        reloadCollectionViewHeight()
+        emojiCollectionView.reloadData()
+        colorCollectionView.reloadData()
     }
-    
-    // MARK: - Настройка интерфейса
-    
+
+    // MARK: - Setup UI
+
     private func setupView() {
         view.backgroundColor = .white
-        
-        // Set delegates
+
         emojiCollectionView.delegate = self
         emojiCollectionView.dataSource = self
         colorCollectionView.delegate = self
         colorCollectionView.dataSource = self
-        
-        view.addSubview(mainStackView)
-        
-        // Добавляем элементы в стек
-        mainStackView.addArrangedSubview(titleLabel)
-        mainStackView.addArrangedSubview(nameTextField)
-        mainStackView.addArrangedSubview(categoryButton)
-        mainStackView.addArrangedSubview(emojiLabel)
-        mainStackView.addArrangedSubview(emojiCollectionView)
-        mainStackView.addArrangedSubview(colorLabel)
-        mainStackView.addArrangedSubview(colorCollectionView)
-        buttonsStackView.addArrangedSubview(cancelButton)
-        buttonsStackView.addArrangedSubview(createButton)
-        mainStackView.addArrangedSubview(buttonsStackView)
+
+        categoryTableView.delegate = self
+        categoryTableView.dataSource = self
+        categoryTableView.register(UITableViewCell.self, forCellReuseIdentifier: "CategoryCell")
+
+        view.addSubview(titleLabel)
+        view.addSubview(nameTextField)
+        view.addSubview(categoryTableView)
+        view.addSubview(emojiLabel)
+        view.addSubview(emojiCollectionView)
+        view.addSubview(colorLabel)
+        view.addSubview(colorCollectionView)
+        view.addSubview(cancelButton)
+        view.addSubview(createButton)
     }
-    
+
     private func setupConstraints() {
-        mainStackView.translatesAutoresizingMaskIntoConstraints = false
-        
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        nameTextField.translatesAutoresizingMaskIntoConstraints = false
+        categoryTableView.translatesAutoresizingMaskIntoConstraints = false
+        emojiLabel.translatesAutoresizingMaskIntoConstraints = false
+        emojiCollectionView.translatesAutoresizingMaskIntoConstraints = false
+        colorLabel.translatesAutoresizingMaskIntoConstraints = false
+        colorCollectionView.translatesAutoresizingMaskIntoConstraints = false
+        cancelButton.translatesAutoresizingMaskIntoConstraints = false
+        createButton.translatesAutoresizingMaskIntoConstraints = false
+        emojiCollectionViewHeightConstraint = emojiCollectionView.heightAnchor.constraint(equalToConstant: 150)
+        emojiCollectionViewHeightConstraint.isActive = true
+        colorCollectionViewHeightConstraint = colorCollectionView.heightAnchor.constraint(equalToConstant: 150)
+        colorCollectionViewHeightConstraint.isActive = true
+
         NSLayoutConstraint.activate([
-            mainStackView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
-            mainStackView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
-            mainStackView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-            mainStackView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
-            
+            titleLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
+            titleLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            titleLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+
+            nameTextField.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 16),
+            nameTextField.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            nameTextField.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
             nameTextField.heightAnchor.constraint(equalToConstant: 75),
-            categoryButton.heightAnchor.constraint(equalToConstant: 75),
-            emojiCollectionView.heightAnchor.constraint(equalToConstant: 150),
-            colorCollectionView.heightAnchor.constraint(equalToConstant: 150),
-            buttonsStackView.heightAnchor.constraint(equalToConstant: 60)
+
+            categoryTableView.topAnchor.constraint(equalTo: nameTextField.bottomAnchor, constant: 16),
+            categoryTableView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            categoryTableView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            categoryTableView.heightAnchor.constraint(equalToConstant: 75),
+
+            emojiLabel.topAnchor.constraint(equalTo: categoryTableView.bottomAnchor, constant: 16),
+            emojiLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+
+            emojiCollectionView.topAnchor.constraint(equalTo: emojiLabel.bottomAnchor, constant: 8),
+            emojiCollectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+            emojiCollectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+
+            colorLabel.topAnchor.constraint(equalTo: emojiCollectionView.bottomAnchor, constant: 16),
+            colorLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+
+            colorCollectionView.topAnchor.constraint(equalTo: colorLabel.bottomAnchor, constant: 8),
+            colorCollectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+            colorCollectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+
+            cancelButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
+            cancelButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            cancelButton.heightAnchor.constraint(equalToConstant: 60),
+            cancelButton.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 0.45),
+
+            createButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
+            createButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            createButton.heightAnchor.constraint(equalToConstant: 60),
+            createButton.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 0.45)
         ])
-        
-        // Дополнительные ограничения для корректного отображения заголовка
-        titleLabel.setContentHuggingPriority(.defaultHigh, for: .vertical)
     }
-    
-    private func configureButtons() {
+
+    private func configureViews() {
         cancelButton.layer.borderWidth = 1
         cancelButton.layer.borderColor = UIColor.systemRed.cgColor
-        categoryButton.titleLabel?.numberOfLines = 2
-        categoryButton.titleLabel?.textAlignment = .center
-        categoryButton.titleLabel?.lineBreakMode = .byWordWrapping
-        updateCategoryButtonTitle()
     }
-    
+
+    private func updateCreateButtonState() {
+        let isFormValid =
+            !(nameTextField.text?.trimmingCharacters(in: .whitespaces).isEmpty ?? true) &&
+            selectedCategory != nil &&
+            selectedEmoji != nil &&
+            selectedColor != nil
+
+        if isFormValid {
+            createButton.backgroundColor = .black
+            createButton.isEnabled = true
+        } else {
+            createButton.backgroundColor = .gray
+            createButton.isEnabled = false
+        }
+    }
+
+    private func setupTextFieldDelegate() {
+        nameTextField.delegate = self
+    }
+
     // MARK: - Actions
-    
+    @objc private func textFieldDidChange() {
+        updateCreateButtonState()
+    }
+
     @objc private func cancelButtonTapped() {
         dismiss(animated: true, completion: nil)
     }
-    
+
     @objc private func createButtonTapped() {
-        // Валидация полей
         guard let name = nameTextField.text, !name.isEmpty,
               let category = selectedCategory,
               let emoji = selectedEmoji,
@@ -196,78 +247,131 @@ final class CreateIrregularEventViewController: UIViewController, CategorySelect
             present(alert, animated: true)
             return
         }
-        
+
         // Создание трекера
         let newTracker = Tracker(
             id: UUID(),
             name: name,
             color: color,
             emoji: emoji,
-            schedule: nil // Нерегулярное событие
+            schedule: nil
         )
-        
-        // Отправка уведомления
+
         NotificationCenter.default.post(name: .didCreateTracker, object: newTracker, userInfo: ["category": category])
-        
-        // Закрытие всех модальных экранов до `TrackerViewController`
+
         self.presentingViewController?.presentingViewController?.dismiss(animated: true, completion: nil)
     }
-    
+
     @objc private func selectCategory() {
         let categorySelectionVC = CategorySelectionViewController()
         categorySelectionVC.delegate = self
         categorySelectionVC.modalPresentationStyle = .pageSheet
-
         present(categorySelectionVC, animated: true, completion: nil)
     }
-    
+
     func categorySelected(_ category: TrackerCategory) {
         selectedCategory = category
-        updateCategoryButtonTitle()
+        categoryTableView.reloadData()
+        updateCreateButtonState()
     }
-    
-    private func updateCategoryButtonTitle() {
+
+    // MARK: - UITextFieldDelegate Methods
+
+    func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
+        guard textField == nameTextField else {
+            return true
+        }
+
+        let currentText = textField.text ?? ""
+
+        guard let stringRange = Range(range, in: currentText) else {
+            return false
+        }
+
+        let updatedText = currentText.replacingCharacters(in: stringRange, with: string)
+
+        if updatedText.count > nameTextFieldMaxLength {
+            showMaxLengthAlert()
+            return false
+        }
+
+        return true
+    }
+
+    private func showMaxLengthAlert() {
+        if self.presentedViewController is UIAlertController {
+            return
+        }
+
+        let alert = UIAlertController(title: "Превышен лимит символов", message: "Название трекера не может превышать \(nameTextFieldMaxLength) символов.", preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
+    }
+}
+
+// MARK: - UITableViewDataSource & UITableViewDelegate
+
+extension CreateIrregularEventViewController: UITableViewDataSource, UITableViewDelegate {
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return 1
+    }
+
+    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        return 75
+    }
+
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+
+        let cell = tableView.dequeueReusableCell(withIdentifier: "CategoryCell", for: indexPath)
+        cell.textLabel?.numberOfLines = 0
+        cell.textLabel?.textAlignment = .left
+
         if let category = selectedCategory {
-            let categoryLabel = "Категория:\n"
-            let categoryName = "\(category.title)"
-            
-            let attributedTitle = NSMutableAttributedString(
-                string: categoryLabel,
+            let categoryPrefix = "Категория:\n"
+            let categoryName = category.title
+
+            let attributedText = NSMutableAttributedString(
+                string: categoryPrefix,
                 attributes: [
                     .foregroundColor: UIColor.black
                 ]
             )
-            
-            let attributedCategory = NSAttributedString(
+
+            let categoryNameAttributed = NSAttributedString(
                 string: categoryName,
                 attributes: [
                     .foregroundColor: UIColor.gray
                 ]
             )
-            
-            attributedTitle.append(attributedCategory)
-            
-            categoryButton.setAttributedTitle(attributedTitle, for: .normal)
+
+            attributedText.append(categoryNameAttributed)
+
+            cell.textLabel?.attributedText = attributedText
         } else {
-            let attributedTitle = NSAttributedString(
-                string: "Выбрать категорию",
-                attributes: [
-                    .foregroundColor: UIColor.black
-                ]
-            )
-            categoryButton.setAttributedTitle(attributedTitle, for: .normal)
+            cell.textLabel?.text = "Выбрать категорию"
+            cell.textLabel?.textColor = .black
         }
+
+        cell.selectionStyle = .none
+        cell.backgroundColor = .backgroundDay
+        cell.layer.cornerRadius = 16
+        cell.layer.masksToBounds = true
+        return cell
+    }
+
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        selectCategory()
     }
 }
 
 // MARK: - UICollectionViewDataSource & Delegate
 
 extension CreateIrregularEventViewController: UICollectionViewDataSource, UICollectionViewDelegate {
-    
+
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return collectionView == emojiCollectionView ? emojis.count : colors.count
     }
-    
+
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         if collectionView == emojiCollectionView {
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: EmojiCell.identifier, for: indexPath) as! EmojiCell
@@ -283,7 +387,7 @@ extension CreateIrregularEventViewController: UICollectionViewDataSource, UIColl
             return cell
         }
     }
-    
+
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         if collectionView == emojiCollectionView {
             selectedEmoji = emojis[indexPath.item]
@@ -292,108 +396,15 @@ extension CreateIrregularEventViewController: UICollectionViewDataSource, UIColl
             selectedColor = colors[indexPath.item]
             collectionView.reloadData()
         }
+        updateCreateButtonState()
     }
-}
-
-
-// MARK: - Ячейки для коллекций
-
-class EmojiCell: UICollectionViewCell {
-    static let identifier = "EmojiCell"
     
-    private let emojiLabel = UILabel()
-    private let selectionView = UIView()
-    
-    override var isSelected: Bool {
-        didSet {
-            selectionView.isHidden = !isSelected
+    func reloadCollectionViewHeight() {
+            DispatchQueue.main.async {
+                self.emojiCollectionView.layoutIfNeeded()
+                self.emojiCollectionViewHeightConstraint.constant = self.emojiCollectionView.contentSize.height
+                self.colorCollectionView.layoutIfNeeded()
+                self.colorCollectionViewHeightConstraint.constant = self.colorCollectionView.contentSize.height
+            }
         }
-    }
-    
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-        setupViews()
-    }
-    
-    private func setupViews() {
-        emojiLabel.font = UIFont.systemFont(ofSize: 32)
-        emojiLabel.textAlignment = .center
-        contentView.addSubview(emojiLabel)
-        contentView.addSubview(selectionView)
-        contentView.layer.cornerRadius = 8
-        contentView.layer.masksToBounds = true
-        
-        selectionView.layer.borderWidth = 2
-        selectionView.layer.borderColor = UIColor.systemBlue.cgColor
-        selectionView.layer.cornerRadius = 8
-        selectionView.isHidden = true
-        
-        emojiLabel.translatesAutoresizingMaskIntoConstraints = false
-        selectionView.translatesAutoresizingMaskIntoConstraints = false
-        
-        NSLayoutConstraint.activate([
-            emojiLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
-            emojiLabel.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
-            
-            selectionView.topAnchor.constraint(equalTo: contentView.topAnchor),
-            selectionView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
-            selectionView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-            selectionView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor)
-        ])
-    }
-    
-    func configure(with emoji: String, isSelected: Bool) {
-        emojiLabel.text = emoji
-        selectionView.isHidden = !isSelected
-    }
-    
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-}
-
-class ColorCell: UICollectionViewCell {
-    static let identifier = "ColorCell"
-    
-    private let selectionView = UIView()
-    
-    override var isSelected: Bool {
-        didSet {
-            selectionView.isHidden = !isSelected
-        }
-    }
-    
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-        setupViews()
-    }
-    
-    private func setupViews() {
-        contentView.layer.cornerRadius = 8
-        contentView.layer.masksToBounds = true
-        
-        selectionView.layer.borderWidth = 2
-        selectionView.layer.borderColor = UIColor.systemBlue.cgColor
-        selectionView.layer.cornerRadius = 8
-        selectionView.isHidden = true
-        
-        contentView.addSubview(selectionView)
-        selectionView.translatesAutoresizingMaskIntoConstraints = false
-        
-        NSLayoutConstraint.activate([
-            selectionView.topAnchor.constraint(equalTo: contentView.topAnchor),
-            selectionView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
-            selectionView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-            selectionView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor)
-        ])
-    }
-    
-    func configure(with colorName: String, isSelected: Bool) {
-        contentView.backgroundColor = UIColor(named: colorName)
-        selectionView.isHidden = !isSelected
-    }
-    
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
 }

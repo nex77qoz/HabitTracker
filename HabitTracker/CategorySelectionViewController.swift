@@ -6,7 +6,12 @@ protocol CategorySelectionDelegate: AnyObject {
 
 class CategorySelectionViewController: UIViewController {
     
-    private var categories = TrackerCategory.allCategories
+    private var categories = TrackerCategory.allCategories {
+        didSet {
+            updatePlaceholderVisibility()
+            tableView.reloadData()
+        }
+    }
     private var selectedCategoryIndex: IndexPath?
     weak var delegate: CategorySelectionDelegate?
     
@@ -28,16 +33,48 @@ class CategorySelectionViewController: UIViewController {
         return table
     }()
     
-    private lazy var addCategoryButton: UIButton = {
-        let button = UIButton(type: .system)
-        button.setTitle("Добавить категорию", for: .normal)
-        button.setTitleColor(.white, for: .normal)
-        button.backgroundColor = .black
-        button.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
-        button.layer.cornerRadius = 16
-        button.translatesAutoresizingMaskIntoConstraints = false
-        button.addTarget(self, action: #selector(addCategoryTapped), for: .touchUpInside)
-        return button
+    private lazy var addCategoryButton = UIButton.roundedButton(
+        title: "Добавить категорию",
+        backgroundColor: .black,
+        titleColor: .white,
+        selector: #selector(addCategoryTapped),
+        target: self
+    )
+
+    
+    // MARK: - Placeholder View
+    
+    private let placeholderView: UIView = {
+        let view = UIView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        
+        let imageView = UIImageView()
+        imageView.image = UIImage(named: "star")
+        imageView.contentMode = .scaleAspectFit
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        
+        let label = UILabel()
+        label.text = "Привычки и события можно \n объединить по смыслу"
+        label.font = UIFont.systemFont(ofSize: 12, weight: .regular)
+        label.textColor = .black
+        label.textAlignment = .center
+        label.numberOfLines = 2
+        label.translatesAutoresizingMaskIntoConstraints = false
+        
+        view.addSubview(imageView)
+        view.addSubview(label)
+        
+        NSLayoutConstraint.activate([
+            imageView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            imageView.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -20),
+            imageView.widthAnchor.constraint(equalToConstant: 80),
+            imageView.heightAnchor.constraint(equalToConstant: 80),
+            
+            label.topAnchor.constraint(equalTo: imageView.bottomAnchor, constant: 16),
+            label.centerXAnchor.constraint(equalTo: view.centerXAnchor)
+        ])
+        
+        return view
     }()
     
     // MARK: - View Lifecycle
@@ -54,6 +91,12 @@ class CategorySelectionViewController: UIViewController {
         tableView.separatorStyle = .none
         
         tableView.tableFooterView = UIView()
+        
+        view.addSubview(placeholderView)
+        setupPlaceholderLayout()
+        
+        updatePlaceholderVisibility()
+        addCategoryButton.translatesAutoresizingMaskIntoConstraints = false
     }
     
     // MARK: - Setup
@@ -75,32 +118,37 @@ class CategorySelectionViewController: UIViewController {
             addCategoryButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
             addCategoryButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             addCategoryButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-            addCategoryButton.heightAnchor.constraint(equalToConstant: 50)
+            addCategoryButton.heightAnchor.constraint(equalToConstant: 60)
+        ])
+    }
+    
+    private func setupPlaceholderLayout() {
+        NSLayoutConstraint.activate([
+            placeholderView.topAnchor.constraint(equalTo: tableView.topAnchor),
+            placeholderView.leadingAnchor.constraint(equalTo: tableView.leadingAnchor),
+            placeholderView.trailingAnchor.constraint(equalTo: tableView.trailingAnchor),
+            placeholderView.bottomAnchor.constraint(equalTo: tableView.bottomAnchor)
         ])
     }
     
     // MARK: - Actions
     
     @objc private func addCategoryTapped() {
-        let alert = UIAlertController(title: "Новая категория", message: "Введите название категории", preferredStyle: .alert)
-        alert.addTextField { textField in
-            textField.placeholder = "Название категории"
+        let categoryCreationVC = CategoryCreationVC()
+        categoryCreationVC.delegate = self
+        present(categoryCreationVC, animated: true)
+    }
+    
+    // MARK: - Helper Methods
+    
+    private func updatePlaceholderVisibility() {
+        if categories.isEmpty {
+            tableView.isHidden = true
+            placeholderView.isHidden = false
+        } else {
+            tableView.isHidden = false
+            placeholderView.isHidden = true
         }
-        
-        let addAction = UIAlertAction(title: "Добавить", style: .default) { [weak self] _ in
-            guard let self = self,
-                  let text = alert.textFields?.first?.text, !text.isEmpty else { return }
-            let newCategory = TrackerCategory(title: text, trackers: [])
-            self.categories.append(newCategory)
-            self.tableView.reloadData()
-        }
-        
-        let cancelAction = UIAlertAction(title: "Отменить", style: .cancel, handler: nil)
-        
-        alert.addAction(addAction)
-        alert.addAction(cancelAction)
-        
-        present(alert, animated: true)
     }
 }
 
@@ -141,7 +189,9 @@ extension CategorySelectionViewController: UITableViewDataSource, UITableViewDel
     
     func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
         let corners: UIRectCorner
-        if indexPath.row == 0 {
+        if indexPath.row == 0 && categories.count == 1{
+            corners = [.topLeft, .topRight, .bottomLeft, .bottomRight]
+        } else if indexPath.row == 0 {
             corners = [.topLeft, .topRight]
         } else if indexPath.row == tableView.numberOfRows(inSection: indexPath.section) - 1 {
             corners = [.bottomLeft, .bottomRight]
@@ -153,5 +203,13 @@ extension CategorySelectionViewController: UITableViewDataSource, UITableViewDel
         let mask = CAShapeLayer()
         mask.path = path.cgPath
         cell.layer.mask = mask
+    }
+}
+
+// MARK: - CategoryCreationDelegate
+extension CategorySelectionViewController: CategoryCreationDelegate {
+    func didCreateCategory(_ category: TrackerCategory) {
+        categories.append(category)
+        tableView.reloadData()
     }
 }
