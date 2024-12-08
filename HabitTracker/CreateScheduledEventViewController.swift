@@ -12,8 +12,9 @@ final class CreateScheduledEventViewController: UIViewController, CategorySelect
     
     private let titleLabel: UILabel = {
         let label = UILabel()
-        label.text = "Новое регулярное событие"
-        label.font = UIFont.systemFont(ofSize: 24, weight: .bold)
+        label.text = "Новая привычка"
+        label.font = UIFont.systemFont(ofSize: 16, weight: .medium)
+        label.textAlignment = .center
         return label
     }()
     
@@ -26,22 +27,7 @@ final class CreateScheduledEventViewController: UIViewController, CategorySelect
         textField.leftViewMode = .always
         return textField
     }()
-    private let categoryButton = UIButton.roundedButton(
-        title: "Выбрать категорию",
-        backgroundColor: .backgroundDay,
-        titleColor: .black,
-        selector: #selector(selectCategory),
-        target: self
-    )
-    
-    private let scheduleButton = UIButton.roundedButton(
-        title: "Расписание",
-        backgroundColor: .backgroundDay,
-        titleColor: .black,
-        selector: #selector(scheduleButtonTapped),
-        target: self
-    )
-    
+
     private let emojiLabel: UILabel = {
         let label = UILabel()
         label.text = "Emoji"
@@ -88,6 +74,21 @@ final class CreateScheduledEventViewController: UIViewController, CategorySelect
         return scrollView
     }()
     
+    // MARK: - Updated UITableView
+    
+    private let tableView: UITableView = {
+        let table = UITableView(frame: .zero, style: .plain)
+        table.register(UITableViewCell.self, forCellReuseIdentifier: "SettingsCell")
+        table.isScrollEnabled = false
+        table.tableHeaderView = UIView(frame: .zero)
+        table.tableFooterView = UIView(frame: .zero)
+        table.contentInset = .zero
+        table.layoutMargins = .zero
+        table.layer.cornerRadius = 16
+        table.layer.masksToBounds = true
+        return table
+    }()
+    
     // MARK: - Data
     
     private let emojis = Emojis.list
@@ -132,18 +133,23 @@ final class CreateScheduledEventViewController: UIViewController, CategorySelect
         return stackView
     }()
     
+    private let settingsOptions = ["Выбрать категорию", "Расписание"]
+    
     // MARK: - Lifecycle
     
     override func viewDidLoad() {
         super.viewDidLoad()
         setupView()
         setupConstraints()
-        categoryButton.titleLabel?.numberOfLines = 2
-        categoryButton.titleLabel?.textAlignment = .center
-        categoryButton.titleLabel?.lineBreakMode = .byWordWrapping
-        scheduleButton.titleLabel?.numberOfLines = 2
-        scheduleButton.titleLabel?.textAlignment = .center
-        scheduleButton.titleLabel?.lineBreakMode = .byWordWrapping
+        
+        emojiCollectionView.delegate = self
+        emojiCollectionView.dataSource = self
+        colorCollectionView.delegate = self
+        colorCollectionView.dataSource = self
+        
+        tableView.delegate = self
+        tableView.dataSource = self
+        
         updateCategoryButtonTitle()
         updateScheduleButtonTitle()
     }
@@ -153,11 +159,6 @@ final class CreateScheduledEventViewController: UIViewController, CategorySelect
     private func setupView() {
         view.backgroundColor = .white
         
-        emojiCollectionView.delegate = self
-        emojiCollectionView.dataSource = self
-        colorCollectionView.delegate = self
-        colorCollectionView.dataSource = self
-        
         view.addSubview(scrollView)
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.addSubview(mainStackView)
@@ -166,8 +167,7 @@ final class CreateScheduledEventViewController: UIViewController, CategorySelect
         
         mainStackView.addArrangedSubview(titleLabel)
         mainStackView.addArrangedSubview(nameTextField)
-        mainStackView.addArrangedSubview(categoryButton)
-        mainStackView.addArrangedSubview(scheduleButton)
+        mainStackView.addArrangedSubview(tableView)
         mainStackView.addArrangedSubview(emojiLabel)
         mainStackView.addArrangedSubview(emojiCollectionView)
         mainStackView.addArrangedSubview(colorLabel)
@@ -175,6 +175,8 @@ final class CreateScheduledEventViewController: UIViewController, CategorySelect
         buttonsStackView.addArrangedSubview(cancelButton)
         buttonsStackView.addArrangedSubview(createButton)
         mainStackView.addArrangedSubview(buttonsStackView)
+        
+        tableView.separatorStyle = .none
     }
     
     private func setupConstraints() {
@@ -190,11 +192,8 @@ final class CreateScheduledEventViewController: UIViewController, CategorySelect
             mainStackView.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor, constant: -16),
             mainStackView.widthAnchor.constraint(equalTo: scrollView.widthAnchor, constant: -32),
             
-            titleLabel.centerXAnchor.constraint(equalTo: mainStackView.centerXAnchor),
-            
             nameTextField.heightAnchor.constraint(equalToConstant: 75),
-            categoryButton.heightAnchor.constraint(equalToConstant: 75),
-            scheduleButton.heightAnchor.constraint(equalToConstant: 75),
+            tableView.heightAnchor.constraint(equalToConstant: 150),
             emojiCollectionView.heightAnchor.constraint(equalToConstant: 150),
             colorCollectionView.heightAnchor.constraint(equalToConstant: 150),
             buttonsStackView.heightAnchor.constraint(equalToConstant: 60)
@@ -205,15 +204,6 @@ final class CreateScheduledEventViewController: UIViewController, CategorySelect
     
     @objc private func cancelButtonTapped() {
         dismiss(animated: true, completion: nil)
-    }
-    
-    @objc private func scheduleButtonTapped() {
-        let scheduleSelectionVC = ScheduleSelectionViewController()
-        scheduleSelectionVC.selectedDays = selectedWeekdays
-        scheduleSelectionVC.delegate = self
-        scheduleSelectionVC.modalPresentationStyle = .pageSheet
-
-        present(scheduleSelectionVC, animated: true, completion: nil)
     }
     
     @objc private func createButtonTapped() {
@@ -263,22 +253,94 @@ final class CreateScheduledEventViewController: UIViewController, CategorySelect
     }
     
     private func updateScheduleButtonTitle() {
-        if selectedWeekdays.isEmpty {
-            scheduleButton.setTitle("Расписание", for: .normal)
-        } else {
-            let sortedDays = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].filter { selectedWeekdays.contains($0) }
-            let daysText = sortedDays.joined(separator: ", ")
-            let title = "Расписание:\n\(daysText)"
-            scheduleButton.setTitle(title, for: .normal)
-        }
+        tableView.reloadData()
+    }
+
+    private func updateCategoryButtonTitle() {
+        tableView.reloadData()
+    }
+}
+
+// MARK: - UITableViewDataSource & Delegate
+
+extension CreateScheduledEventViewController: UITableViewDataSource, UITableViewDelegate {
+    func numberOfSections(in tableView: UITableView) -> Int {
+        return 1
     }
     
-    private func updateCategoryButtonTitle() {
-        if let category = selectedCategory {
-            let title = "Категория:\n\(category.title)"
-            categoryButton.setTitle(title, for: .normal)
-        } else {
-            categoryButton.setTitle("Выбрать категорию", for: .normal)
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+         return settingsOptions.count
+    }
+    
+    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        return 75
+    }
+    
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+
+        let cell = tableView.dequeueReusableCell(withIdentifier: "SettingsCell", for: indexPath)
+        
+        cell.selectionStyle = .none
+        cell.accessoryType = .disclosureIndicator
+        cell.backgroundColor = .backgroundDay
+        
+        let option = settingsOptions[indexPath.row]
+        cell.textLabel?.font = UIFont.systemFont(ofSize: 16)
+        cell.textLabel?.textColor = .black
+        
+        if indexPath.row == 0 {
+            let separator = UIView()
+            separator.backgroundColor = .lightGray
+            separator.translatesAutoresizingMaskIntoConstraints = false
+            cell.contentView.addSubview(separator)
+
+            NSLayoutConstraint.activate([
+                separator.heightAnchor.constraint(equalToConstant: 1),
+                separator.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 32),
+                separator.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -32),
+                separator.bottomAnchor.constraint(equalTo: cell.contentView.bottomAnchor)
+            ])
+        }
+        
+        switch option {
+        case "Выбрать категорию":
+            if let category = selectedCategory {
+                cell.textLabel?.text = "Категория:\n\(category.title)"
+            } else {
+                cell.textLabel?.text = "Выбрать категорию"
+            }
+        case "Расписание":
+            if selectedWeekdays.isEmpty {
+                cell.textLabel?.text = "Расписание"
+            } else {
+                let sortedDays = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].filter { selectedWeekdays.contains($0) }
+                let daysText = sortedDays.joined(separator: ", ")
+                cell.textLabel?.text = "Расписание:\n\(daysText)"
+            }
+        default:
+            cell.textLabel?.text = option
+        }
+        
+        cell.textLabel?.numberOfLines = 0
+        cell.textLabel?.textAlignment = .left
+        
+        return cell
+    }
+    
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        let option = settingsOptions[indexPath.row]
+        switch option {
+        case "Выбрать категорию":
+            selectCategory()
+        case "Расписание":
+            let scheduleSelectionVC = ScheduleSelectionViewController()
+            scheduleSelectionVC.selectedDays = selectedWeekdays
+            scheduleSelectionVC.delegate = self
+            scheduleSelectionVC.modalPresentationStyle = .pageSheet
+
+            present(scheduleSelectionVC, animated: true, completion: nil)
+        default:
+            break
         }
     }
 }
@@ -297,6 +359,7 @@ extension CreateScheduledEventViewController: UICollectionViewDataSource, UIColl
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+
         if collectionView == emojiCollectionView {
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: EmojiCell.identifier, for: indexPath) as! EmojiCell
             let emoji = emojis[indexPath.item]
@@ -310,7 +373,7 @@ extension CreateScheduledEventViewController: UICollectionViewDataSource, UIColl
             cell.configure(with: colorName, isSelected: isSelected)
             return cell
         } else {
-            fatalError("Экран сейчас не во View")
+            fatalError("Unexpected collection view")
         }
     }
     

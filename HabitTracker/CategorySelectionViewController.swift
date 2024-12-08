@@ -1,92 +1,157 @@
-//
-//  CategorySelectionViewController.swift
 import UIKit
 
 protocol CategorySelectionDelegate: AnyObject {
     func categorySelected(_ category: TrackerCategory)
 }
 
-final class CategorySelectionViewController: UIViewController {
+class CategorySelectionViewController: UIViewController {
     
+    private var categories = TrackerCategory.allCategories
+    private var selectedCategoryIndex: IndexPath?
     weak var delegate: CategorySelectionDelegate?
-    private let titleLabel = UILabel()
-    private let tableView = UITableView(frame: .zero, style: .plain)
-    private let addButton = UIButton.roundedButton(title: "Добавить категорию", backgroundColor: .black, titleColor: .white, selector: #selector(addButtonTapped), target: self)
-    private let categories = TrackerCategory.allCategories
-    private var selectedCategory: TrackerCategory?
+    
+    private let titleLabel: UILabel = {
+        let label = UILabel()
+        label.text = "Категория"
+        label.font = UIFont.systemFont(ofSize: 16, weight: .medium)
+        label.textAlignment = .center
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+    
+    private let tableView: UITableView = {
+        let table = UITableView()
+        table.register(CustomTableViewCell.self, forCellReuseIdentifier: "CategoryCell")
+        table.translatesAutoresizingMaskIntoConstraints = false
+        table.layer.cornerRadius = 16
+        table.layer.masksToBounds = true
+        return table
+    }()
+    
+    private lazy var addCategoryButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.setTitle("Добавить категорию", for: .normal)
+        button.setTitleColor(.white, for: .normal)
+        button.backgroundColor = .black
+        button.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
+        button.layer.cornerRadius = 16
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.addTarget(self, action: #selector(addCategoryTapped), for: .touchUpInside)
+        return button
+    }()
+    
+    // MARK: - View Lifecycle
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        setupView()
-        tableView.register(CategoryTableViewCell.self, forCellReuseIdentifier: CategoryTableViewCell.identifier)
-    }
-    
-    private func setupView() {
+        title = "Категория"
         view.backgroundColor = .white
         
-        titleLabel.text = "Категории"
-        titleLabel.font = UIFont.systemFont(ofSize: 24, weight: .bold)
-        titleLabel.textColor = .black
-        titleLabel.textAlignment = .center
-        titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(titleLabel)
+        setupLayout()
         
-        view.addSubview(tableView)
-        tableView.translatesAutoresizingMaskIntoConstraints = false
-        tableView.register(UITableViewCell.self, forCellReuseIdentifier: "CategoryCell")
-        tableView.delegate = self
         tableView.dataSource = self
-        
-        tableView.separatorInset = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
-        tableView.layoutMargins = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
+        tableView.delegate = self
+        tableView.separatorStyle = .none
         
         tableView.tableFooterView = UIView()
-        
-        view.addSubview(addButton)
-        addButton.translatesAutoresizingMaskIntoConstraints = false
+    }
+    
+    // MARK: - Setup
+    
+    private func setupLayout() {
+        view.addSubview(titleLabel)
+        view.addSubview(tableView)
+        view.addSubview(addCategoryButton)
         
         NSLayoutConstraint.activate([
-            titleLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 24),
-            titleLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
-            titleLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-            titleLabel.heightAnchor.constraint(equalToConstant: 30),
+            titleLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
+            titleLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             
-            tableView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 38),
-            tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
-            tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-            tableView.bottomAnchor.constraint(equalTo: addButton.topAnchor, constant: -16),
+            tableView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 24),
+            tableView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
+            tableView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
+            tableView.bottomAnchor.constraint(equalTo: addCategoryButton.topAnchor, constant: -16),
             
-            addButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
-            addButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-            addButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
-            addButton.heightAnchor.constraint(equalToConstant: 60)
+            addCategoryButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
+            addCategoryButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            addCategoryButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            addCategoryButton.heightAnchor.constraint(equalToConstant: 50)
         ])
     }
     
-    @objc private func addButtonTapped() {
-        self.dismiss(animated: true, completion: nil)
+    // MARK: - Actions
+    
+    @objc private func addCategoryTapped() {
+        let alert = UIAlertController(title: "Новая категория", message: "Введите название категории", preferredStyle: .alert)
+        alert.addTextField { textField in
+            textField.placeholder = "Название категории"
+        }
+        
+        let addAction = UIAlertAction(title: "Добавить", style: .default) { [weak self] _ in
+            guard let self = self,
+                  let text = alert.textFields?.first?.text, !text.isEmpty else { return }
+            let newCategory = TrackerCategory(title: text, trackers: [])
+            self.categories.append(newCategory)
+            self.tableView.reloadData()
+        }
+        
+        let cancelAction = UIAlertAction(title: "Отменить", style: .cancel, handler: nil)
+        
+        alert.addAction(addAction)
+        alert.addAction(cancelAction)
+        
+        present(alert, animated: true)
     }
 }
 
-extension CategorySelectionViewController: UITableViewDelegate, UITableViewDataSource {
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+// MARK: - UITableViewDataSource & UITableViewDelegate
+
+extension CategorySelectionViewController: UITableViewDataSource, UITableViewDelegate {
+    func tableView(_ tableView: UITableView,
+                   numberOfRowsInSection section: Int) -> Int {
         return categories.count
     }
     
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: CategoryTableViewCell.identifier, for: indexPath) as! CategoryTableViewCell
-        let category = categories[indexPath.row]
-        cell.configure(with: category, isSelected: category == selectedCategory)
+    func tableView(_ tableView: UITableView,
+                   cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(
+            withIdentifier: "CategoryCell",
+            for: indexPath
+        ) as! CustomTableViewCell
+        cell.textLabel?.text = categories[indexPath.row].title
+        cell.backgroundColor = .backgroundDay
+        if indexPath.row == categories.count - 1 {
+            cell.setSeparatorHidden(true)
+        } else {
+            cell.setSeparatorHidden(false)
+        }
         return cell
     }
     
-    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        selectedCategory = categories[indexPath.row]
-        delegate?.categorySelected(selectedCategory!)
-        tableView.reloadData()
+    func tableView(_ tableView: UITableView,
+                   didSelectRowAt indexPath: IndexPath) {
+        let chosenCategory = categories[indexPath.row]
+        delegate?.categorySelected(chosenCategory)
+        dismiss(animated: true, completion: nil)
     }
     
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         return 75
+    }
+    
+    func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
+        let corners: UIRectCorner
+        if indexPath.row == 0 {
+            corners = [.topLeft, .topRight]
+        } else if indexPath.row == tableView.numberOfRows(inSection: indexPath.section) - 1 {
+            corners = [.bottomLeft, .bottomRight]
+        } else {
+            return
+        }
+        
+        let path = UIBezierPath(roundedRect: cell.bounds, byRoundingCorners: corners, cornerRadii: CGSize(width: 16, height: 16))
+        let mask = CAShapeLayer()
+        mask.path = path.cgPath
+        cell.layer.mask = mask
     }
 }

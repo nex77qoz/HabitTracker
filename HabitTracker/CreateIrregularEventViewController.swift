@@ -10,7 +10,7 @@ final class CreateIrregularEventViewController: UIViewController, CategorySelect
     private let titleLabel: UILabel = {
         let label = UILabel()
         label.text = "Новое нерегулярное событие"
-        label.font = UIFont.systemFont(ofSize: 24, weight: .bold)
+        label.font = UIFont.systemFont(ofSize: 16, weight: .medium)
         return label
     }()
     

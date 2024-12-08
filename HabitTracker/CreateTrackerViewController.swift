@@ -9,32 +9,22 @@ final class CreateTrackerViewController: UIViewController {
     private let titleLabel: UILabel = {
         let label = UILabel()
         label.text = "Создание трекера"
-        label.font = UIFont.systemFont(ofSize: 24, weight: .bold)
+        label.font = UIFont.systemFont(ofSize: 16, weight: .medium)
         label.textAlignment = .center
         return label
     }()
-    
-    private let habitButton: UIButton = {
-        let button = UIButton(type: .system)
-        button.setTitle("Привычка", for: .normal)
-        button.setTitleColor(.white, for: .normal)
-        button.backgroundColor = .black
-        button.layer.cornerRadius = 10
-        button.titleLabel?.font = UIFont.systemFont(ofSize: 18, weight: .medium)
-        button.addTarget(self, action: #selector(habitButtonTapped), for: .touchUpInside)
-        return button
-    }()
-    
-    private let irregularEventButton: UIButton = {
-        let button = UIButton(type: .system)
-        button.setTitle("Нерегулярное событие", for: .normal)
-        button.setTitleColor(.white, for: .normal)
-        button.backgroundColor = .black
-        button.layer.cornerRadius = 10
-        button.titleLabel?.font = UIFont.systemFont(ofSize: 18, weight: .medium)
-        button.addTarget(self, action: #selector(irregularEventButtonTapped), for: .touchUpInside)
-        return button
-    }()
+    private let habitButton = UIButton.roundedButton(
+        title: "Привычка",
+        backgroundColor: .black,
+        titleColor: .white,
+        selector: #selector(habitButtonTapped), target: self
+    )
+    private let irregularEventButton = UIButton.roundedButton(
+        title: "Нерегулярное событие",
+        backgroundColor: .black,
+        titleColor: .white,
+        selector: #selector(irregularEventButtonTapped), target: self
+    )
     
     // MARK: - Lifecycle
     
