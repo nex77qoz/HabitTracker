@@ -18,6 +18,7 @@ final class CategorySelectionViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupView()
+        tableView.register(CategoryTableViewCell.self, forCellReuseIdentifier: CategoryTableViewCell.identifier)
     }
     
     private func setupView() {
@@ -73,14 +74,9 @@ extension CategorySelectionViewController: UITableViewDelegate, UITableViewDataS
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "CategoryCell", for: indexPath)
+        let cell = tableView.dequeueReusableCell(withIdentifier: CategoryTableViewCell.identifier, for: indexPath) as! CategoryTableViewCell
         let category = categories[indexPath.row]
-        
-        cell.textLabel?.text = category.title
-        cell.textLabel?.font = UIFont.systemFont(ofSize: 17, weight: .regular)
-        cell.backgroundColor = .backgroundDay
-        cell.accessoryType = (category == selectedCategory) ? .checkmark : .none
-        
+        cell.configure(with: category, isSelected: category == selectedCategory)
         return cell
     }
     

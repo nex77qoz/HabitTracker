@@ -217,12 +217,7 @@ final class CreateIrregularEventViewController: UIViewController, CategorySelect
         let categorySelectionVC = CategorySelectionViewController()
         categorySelectionVC.delegate = self
         categorySelectionVC.modalPresentationStyle = .pageSheet
-        
-        if let sheet = categorySelectionVC.sheetPresentationController {
-            sheet.detents = [.large()]
-            sheet.prefersGrabberVisible = true
-            sheet.preferredCornerRadius = 20
-        }
+
         present(categorySelectionVC, animated: true, completion: nil)
     }
     

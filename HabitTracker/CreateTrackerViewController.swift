@@ -85,11 +85,6 @@ final class CreateTrackerViewController: UIViewController {
         let createScheduledEventVC = CreateScheduledEventViewController()
         createScheduledEventVC.modalPresentationStyle = .pageSheet
         
-        if let sheet = createScheduledEventVC.sheetPresentationController {
-            sheet.detents = [.large()]
-            sheet.prefersGrabberVisible = true
-            sheet.preferredCornerRadius = 20
-        }
         present(createScheduledEventVC, animated: true, completion: nil)
     }
     
@@ -97,11 +92,6 @@ final class CreateTrackerViewController: UIViewController {
         let createIrregularEventVC = CreateIrregularEventViewController()
         createIrregularEventVC.modalPresentationStyle = .pageSheet
         
-        if let sheet = createIrregularEventVC.sheetPresentationController {
-            sheet.detents = [.large()]
-            sheet.prefersGrabberVisible = true
-            sheet.preferredCornerRadius = 20
-        }
         present(createIrregularEventVC, animated: true, completion: nil)
     }
 }

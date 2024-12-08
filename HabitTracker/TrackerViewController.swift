@@ -135,12 +135,6 @@ final class TrackerViewController: UIViewController {
             let createTrackerVC = CreateTrackerViewController()
             createTrackerVC.modalPresentationStyle = .pageSheet
             
-            if let sheet = createTrackerVC.sheetPresentationController {
-                sheet.detents = [.large()]
-                sheet.prefersGrabberVisible = true
-                sheet.preferredCornerRadius = 20
-            }
-            
             present(createTrackerVC, animated: true, completion: nil)
         }
     

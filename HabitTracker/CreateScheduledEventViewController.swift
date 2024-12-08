@@ -212,13 +212,7 @@ final class CreateScheduledEventViewController: UIViewController, CategorySelect
         scheduleSelectionVC.selectedDays = selectedWeekdays
         scheduleSelectionVC.delegate = self
         scheduleSelectionVC.modalPresentationStyle = .pageSheet
-        
-        if let sheet = scheduleSelectionVC.sheetPresentationController {
-            sheet.detents = [.large()]
-            sheet.prefersGrabberVisible = true
-            sheet.preferredCornerRadius = 20
-        }
-        
+
         present(scheduleSelectionVC, animated: true, completion: nil)
     }
     
@@ -254,12 +248,7 @@ final class CreateScheduledEventViewController: UIViewController, CategorySelect
         let categorySelectionVC = CategorySelectionViewController()
         categorySelectionVC.delegate = self
         categorySelectionVC.modalPresentationStyle = .pageSheet
-        
-        if let sheet = categorySelectionVC.sheetPresentationController {
-            sheet.detents = [.large()]
-            sheet.prefersGrabberVisible = true
-            sheet.preferredCornerRadius = 20
-        }
+
         present(categorySelectionVC, animated: true, completion: nil)
     }
     
