@@ -1,5 +1,3 @@
-//
-//  ScheduleSelectionViewController.swift
 import UIKit
 
 final class ScheduleSelectionViewController: UIViewController, UITableViewDelegate, UITableViewDataSource {

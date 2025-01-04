@@ -1,5 +1,5 @@
 import Foundation
 
-struct Schedule: Equatable {
+struct Schedule: Equatable, Codable {
     let daysOfWeek: [Bool]
 }

@@ -1,5 +1,3 @@
-//
-//  CreateTrackerViewController.swift
 import UIKit
 
 final class CreateTrackerViewController: UIViewController {

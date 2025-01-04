@@ -1,5 +1,3 @@
-//
-//  TrackerViewController.swift
 import UIKit
 
 final class TrackerViewController: UIViewController {
@@ -40,9 +38,11 @@ final class TrackerViewController: UIViewController {
         collectionView.dataSource = presenter
         collectionView.delegate = presenter
         collectionView.register(TrackerCell.self, forCellWithReuseIdentifier: TrackerCell.identifier)
-        collectionView.register(TrackerHeaderView.self,
-                                forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader,
-                                withReuseIdentifier: TrackerHeaderView.identifier)
+        collectionView.register(
+            TrackerHeaderView.self,
+            forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader,
+            withReuseIdentifier: TrackerHeaderView.identifier
+        )
         return collectionView
     }()
     
@@ -79,7 +79,6 @@ final class TrackerViewController: UIViewController {
         super.viewDidLoad()
         setupUI()
         setupNavigationBar()
-        presenter.viewDidLoad()
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -155,5 +154,11 @@ extension TrackerViewController: TrackerViewProtocol {
     
     func reloadItems(at indexPaths: [IndexPath]) {
         collectionView.reloadItems(at: indexPaths)
+    }
+}
+
+extension TrackerViewController: TrackerStoreDelegate, TrackerCategoryStoreDelegate, TrackerRecordStoreDelegate {
+    func didUpdate() {
+        reloadCollectionView()
     }
 }

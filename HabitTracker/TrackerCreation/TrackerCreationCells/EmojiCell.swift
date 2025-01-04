@@ -1,6 +1,3 @@
-//
-//  EmojiCell.swift
-//  HabitTracker
 import UIKit
 
 class EmojiCell: UICollectionViewCell {
