@@ -17,21 +17,21 @@ final class TrackerPresenter: NSObject {
     private var dailySections: [(category: TrackerCategoryCoreData, trackers: [TrackerCoreData])] {
         let all = trackerStore.trackers
         let valid = all.filter { isTrackerValidForToday($0) }
-        
+
         let groups = Dictionary(grouping: valid, by: { $0.category }).compactMap { pair -> (TrackerCategoryCoreData, [TrackerCoreData])? in
             guard let category = pair.key else { return nil }
             return (category, pair.value)
         }
-        
+
         let sortedGroups = groups.map { (cat, trackers) -> (TrackerCategoryCoreData, [TrackerCoreData]) in
             let sortedTrackers = trackers.sorted { ($0.name ?? "") < ($1.name ?? "") }
             return (cat, sortedTrackers)
         }
         .sorted { ($0.0.title ?? "") < ($1.0.title ?? "") }
-        
+
         return sortedGroups
     }
-    
+
     init(view: TrackerViewProtocol) {
         self.view = view
         self.trackerStore = TrackerStore()
@@ -47,31 +47,29 @@ final class TrackerPresenter: NSObject {
             object: nil
         )
     }
-    
+
     func datePickerValueChanged(date: Date) {
         currentDate = date
         view?.reloadCollectionView()
         updatePlaceholderVisibility()
     }
-    
+
     func updatePlaceholderVisibility() {
         let hasTrackers = !dailySections.isEmpty
         view?.updatePlaceholderVisibility(isHidden: hasTrackers)
     }
-    
+
     func toggleTrackerCompletion(for tracker: TrackerCoreData, at indexPath: IndexPath) {
         let day = currentDate.startOfDay()
-        
         if let record = recordFor(tracker, on: day) {
             try? recordStore.deleteRecord(record)
         } else {
             let newRecord = TrackerRecord(trackerId: tracker.id ?? UUID(), date: day)
             try? recordStore.addRecord(newRecord, tracker: tracker)
         }
-        
         view?.reloadItems(at: [indexPath])
     }
-    
+
     @objc private func didCreateTracker(_ notification: Notification) {
         guard
             let newTracker = notification.object as? Tracker,
@@ -85,29 +83,31 @@ final class TrackerPresenter: NSObject {
             print("Error creating tracker: \(error)")
         }
     }
-    
-    private func isTrackerValidForToday(_ t: TrackerCoreData) -> Bool {
-        if t.isIrregular {
+
+    func isTrackerValidForToday(_ tracker: TrackerCoreData) -> Bool {
+        if tracker.isIrregular {
             return true
-        } else {
-            guard
-                let data = t.schedule as? Data,
-                let schedule = try? JSONDecoder().decode(Schedule.self, from: data)
-            else {
-                return false
-            }
-            let weekdayIndex = Calendar.current.component(.weekday, from: currentDate) - 1
-            return schedule.daysOfWeek[weekdayIndex]
         }
+        guard
+            let data = tracker.schedule as? Data,
+            let schedule = try? JSONDecoder().decode(Schedule.self, from: data)
+        else {
+            return false
+        }
+        
+        let systemWeekday = Calendar.current.component(.weekday, from: currentDate)
+        let weekdayIndex = (systemWeekday + 5) % 7
+        
+        return schedule.daysOfWeek[weekdayIndex]
     }
-    
+
     private func recordFor(_ tracker: TrackerCoreData, on date: Date) -> TrackerRecordCoreData? {
         recordStore.records.first {
             $0.trackerId == tracker.id &&
             ($0.date.map { Calendar.current.isDate($0, inSameDayAs: date) } ?? false)
         }
     }
-    
+
     private func totalDaysCompleted(_ tracker: TrackerCoreData) -> Int {
         recordStore.records.filter { $0.trackerId == tracker.id }.count
     }
@@ -141,7 +141,7 @@ extension TrackerPresenter: UICollectionViewDataSource {
             return UICollectionViewCell()
         }
         
-        let (category, trackers) = dailySections[indexPath.section]
+        let (_, trackers) = dailySections[indexPath.section]
         let tracker = trackers[indexPath.item]
         let day = currentDate.startOfDay()
         let isCompleted = (recordFor(tracker, on: day) != nil)
@@ -156,7 +156,6 @@ extension TrackerPresenter: UICollectionViewDataSource {
         )
         cell.delegate = self
         cell.indexPath = indexPath
-        
         return cell
     }
 }
