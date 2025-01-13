@@ -161,9 +161,9 @@ final class CreateIrregularEventViewController: UIViewController, CategorySelect
     
     private func updateCreateButtonState() {
         let isFormValid = !(nameTextField.text?.trimmingCharacters(in: .whitespaces).isEmpty ?? true)
-            && selectedCategory != nil
-            && selectedEmoji != nil
-            && selectedColor != nil
+        && selectedCategory != nil
+        && selectedEmoji != nil
+        && selectedColor != nil
         if isFormValid {
             createButton.backgroundColor = .black
             createButton.isEnabled = true

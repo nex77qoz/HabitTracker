@@ -1,4 +1,3 @@
-import UIKit
 import CoreData
 
 final class TrackerStore: NSObject {
@@ -6,13 +5,8 @@ final class TrackerStore: NSObject {
     private var fetchedResultsController: NSFetchedResultsController<TrackerCoreData>?
     weak var delegate: TrackerStoreDelegate?
     
-    convenience override init() {
-        let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
-        self.init(context: context)
-    }
-    
-    init(context: NSManagedObjectContext) {
-        self.context = context
+    override init() {
+        self.context = CoreDataManager.shared.context
         super.init()
         
         let request = NSFetchRequest<TrackerCoreData>(entityName: "TrackerCoreData")
@@ -29,7 +23,11 @@ final class TrackerStore: NSObject {
         )
         fetchedResultsController?.delegate = self
         
-        try? fetchedResultsController?.performFetch()
+        do {
+            try fetchedResultsController?.performFetch()
+        } catch {
+            print("Failed to fetch trackers: \(error)")
+        }
     }
     
     var trackers: [TrackerCoreData] {
@@ -58,7 +56,7 @@ final class TrackerStore: NSObject {
         }
         trackerCoreData.isIrregular = tracker.isIrregular
         trackerCoreData.category = category
-        try context.save()
+        try CoreDataManager.shared.saveContext()
     }
     
     func fetchTrackers() throws -> [TrackerCoreData] {
@@ -68,7 +66,7 @@ final class TrackerStore: NSObject {
     
     func deleteTracker(_ tracker: TrackerCoreData) throws {
         context.delete(tracker)
-        try context.save()
+        try CoreDataManager.shared.saveContext()
     }
 }
 

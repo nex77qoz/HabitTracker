@@ -95,14 +95,14 @@ final class ScheduleSelectionViewController: UIViewController, UITableViewDelega
     
     private func dayNameShort(_ fullName: String) -> String {
         switch fullName {
-            case "Понедельник": return "Пн"
-            case "Вторник": return "Вт"
-            case "Среда": return "Ср"
-            case "Четверг": return "Чт"
-            case "Пятница": return "Пт"
-            case "Суббота": return "Сб"
-            case "Воскресенье": return "Вс"
-            default: return fullName
+        case "Понедельник": return "Пн"
+        case "Вторник": return "Вт"
+        case "Среда": return "Ср"
+        case "Четверг": return "Чт"
+        case "Пятница": return "Пт"
+        case "Суббота": return "Сб"
+        case "Воскресенье": return "Вс"
+        default: return fullName
         }
     }
     

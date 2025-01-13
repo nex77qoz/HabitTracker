@@ -5,6 +5,6 @@ struct TrackerCategory: Equatable {
     var trackers: [Tracker]
     
     static let allCategories: [TrackerCategory] = [
-
+        
     ]
 }

@@ -36,7 +36,7 @@ final class TrackerViewController: UIViewController {
         let collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
         collectionView.backgroundColor = .white
         collectionView.dataSource = presenter
-        collectionView.delegate = presenter
+        collectionView.delegate = self
         collectionView.register(TrackerCell.self, forCellWithReuseIdentifier: TrackerCell.identifier)
         collectionView.register(
             TrackerHeaderView.self,
@@ -131,16 +131,17 @@ final class TrackerViewController: UIViewController {
     // MARK: - Обработчики действий
     
     @objc private func showAddTracker() {
-            let createTrackerVC = CreateTrackerViewController()
-            createTrackerVC.modalPresentationStyle = .pageSheet
-            
-            present(createTrackerVC, animated: true, completion: nil)
-        }
+        let createTrackerVC = CreateTrackerViewController()
+        createTrackerVC.modalPresentationStyle = .pageSheet
+        present(createTrackerVC, animated: true, completion: nil)
+    }
     
     @objc private func datePickerValueChanged(_ sender: UIDatePicker) {
         presenter.datePickerValueChanged(date: sender.date)
     }
 }
+
+// MARK: - TrackerViewProtocol
 
 extension TrackerViewController: TrackerViewProtocol {
     func reloadCollectionView() {
@@ -157,8 +158,37 @@ extension TrackerViewController: TrackerViewProtocol {
     }
 }
 
-extension TrackerViewController: TrackerStoreDelegate, TrackerCategoryStoreDelegate, TrackerRecordStoreDelegate {
-    func didUpdate() {
-        reloadCollectionView()
+// MARK: - UICollectionViewDelegateFlowLayout
+extension TrackerViewController: UICollectionViewDelegateFlowLayout {
+    func collectionView(_ collectionView: UICollectionView,
+                        layout collectionViewLayout: UICollectionViewLayout,
+                        sizeForItemAt indexPath: IndexPath) -> CGSize {
+        
+        let totalSpacing: CGFloat = 48
+        let width = (collectionView.frame.width - totalSpacing) / 2
+        return CGSize(width: width, height: 175)
+    }
+}
+
+// MARK: - UICollectionViewDelegate
+extension TrackerViewController: UICollectionViewDelegate {
+    func collectionView(_ collectionView: UICollectionView,
+                        contextMenuConfigurationForItemAt indexPath: IndexPath,
+                        point: CGPoint) -> UIContextMenuConfiguration? {
+        let tracker = presenter.dailySections[indexPath.section].trackers[indexPath.item]
+        
+        return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { [weak self] _ in
+            let deleteAction = UIAction(title: "Удалить", image: UIImage(systemName: "trash"), attributes: .destructive) { _ in
+                let alert = UIAlertController(title: "Удалить трекер",
+                                              message: "Вы уверены, что хотите удалить этот трекер?",
+                                              preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "Отмена", style: .cancel, handler: nil))
+                alert.addAction(UIAlertAction(title: "Удалить", style: .destructive, handler: { _ in
+                    self?.presenter.deleteTracker(tracker)
+                }))
+                self?.present(alert, animated: true, completion: nil)
+            }
+            return UIMenu(title: "", children: [deleteAction])
+        }
     }
 }

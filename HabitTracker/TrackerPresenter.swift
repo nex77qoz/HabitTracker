@@ -1,5 +1,3 @@
-// TrackerPresenter.swift
-
 import UIKit
 
 protocol TrackerViewProtocol: AnyObject {
@@ -14,24 +12,24 @@ final class TrackerPresenter: NSObject {
     private let recordStore: TrackerRecordStore
     private var currentDate = Date()
     
-    private var dailySections: [(category: TrackerCategoryCoreData, trackers: [TrackerCoreData])] {
+    var dailySections: [(category: TrackerCategoryCoreData, trackers: [TrackerCoreData])] {
         let all = trackerStore.trackers
         let valid = all.filter { isTrackerValidForToday($0) }
-
+        
         let groups = Dictionary(grouping: valid, by: { $0.category }).compactMap { pair -> (TrackerCategoryCoreData, [TrackerCoreData])? in
             guard let category = pair.key else { return nil }
             return (category, pair.value)
         }
-
+        
         let sortedGroups = groups.map { (cat, trackers) -> (TrackerCategoryCoreData, [TrackerCoreData]) in
             let sortedTrackers = trackers.sorted { ($0.name ?? "") < ($1.name ?? "") }
             return (cat, sortedTrackers)
         }
-        .sorted { ($0.0.title ?? "") < ($1.0.title ?? "") }
-
+            .sorted { ($0.0.title ?? "") < ($1.0.title ?? "") }
+        
         return sortedGroups
     }
-
+    
     init(view: TrackerViewProtocol) {
         self.view = view
         self.trackerStore = TrackerStore()
@@ -47,18 +45,18 @@ final class TrackerPresenter: NSObject {
             object: nil
         )
     }
-
+    
     func datePickerValueChanged(date: Date) {
         currentDate = date
         view?.reloadCollectionView()
         updatePlaceholderVisibility()
     }
-
+    
     func updatePlaceholderVisibility() {
         let hasTrackers = !dailySections.isEmpty
         view?.updatePlaceholderVisibility(isHidden: hasTrackers)
     }
-
+    
     func toggleTrackerCompletion(for tracker: TrackerCoreData, at indexPath: IndexPath) {
         let day = currentDate.startOfDay()
         if let record = recordFor(tracker, on: day) {
@@ -69,7 +67,7 @@ final class TrackerPresenter: NSObject {
         }
         view?.reloadItems(at: [indexPath])
     }
-
+    
     @objc private func didCreateTracker(_ notification: Notification) {
         guard
             let newTracker = notification.object as? Tracker,
@@ -83,7 +81,7 @@ final class TrackerPresenter: NSObject {
             print("Error creating tracker: \(error)")
         }
     }
-
+    
     func isTrackerValidForToday(_ tracker: TrackerCoreData) -> Bool {
         if tracker.isIrregular {
             return true
@@ -100,16 +98,24 @@ final class TrackerPresenter: NSObject {
         
         return schedule.daysOfWeek[weekdayIndex]
     }
-
+    
     private func recordFor(_ tracker: TrackerCoreData, on date: Date) -> TrackerRecordCoreData? {
         recordStore.records.first {
             $0.trackerId == tracker.id &&
             ($0.date.map { Calendar.current.isDate($0, inSameDayAs: date) } ?? false)
         }
     }
-
+    
     private func totalDaysCompleted(_ tracker: TrackerCoreData) -> Int {
         recordStore.records.filter { $0.trackerId == tracker.id }.count
+    }
+    
+    func deleteTracker(_ tracker: TrackerCoreData) {
+        do {
+            try trackerStore.deleteTracker(tracker)
+        } catch {
+            print("Error deleting tracker: \(error)")
+        }
     }
 }
 
@@ -205,5 +211,9 @@ extension TrackerPresenter: TrackerCellDelegate {
                      didToggleCompletionFor tracker: TrackerCoreData,
                      at indexPath: IndexPath) {
         toggleTrackerCompletion(for: tracker, at: indexPath)
+    }
+    
+    func trackerCell(_ cell: TrackerCell, didRequestDeleteFor tracker: TrackerCoreData) {
+        deleteTracker(tracker)
     }
 }

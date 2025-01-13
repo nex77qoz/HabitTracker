@@ -1,4 +1,3 @@
-import UIKit
 import CoreData
 
 final class TrackerCategoryStore: NSObject {
@@ -6,13 +5,8 @@ final class TrackerCategoryStore: NSObject {
     private var fetchedResultsController: NSFetchedResultsController<TrackerCategoryCoreData>?
     weak var delegate: TrackerCategoryStoreDelegate?
     
-    convenience override init() {
-        let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
-        self.init(context: context)
-    }
-    
-    init(context: NSManagedObjectContext) {
-        self.context = context
+    override init() {
+        self.context = CoreDataManager.shared.context
         super.init()
         
         let request = NSFetchRequest<TrackerCategoryCoreData>(entityName: "TrackerCategoryCoreData")
@@ -26,7 +20,11 @@ final class TrackerCategoryStore: NSObject {
         )
         fetchedResultsController?.delegate = self
         
-        try? fetchedResultsController?.performFetch()
+        do {
+            try fetchedResultsController?.performFetch()
+        } catch {
+            print("Failed to fetch categories: \(error)")
+        }
     }
     
     var categories: [TrackerCategoryCoreData] {
@@ -36,12 +34,12 @@ final class TrackerCategoryStore: NSObject {
     func addCategory(_ category: TrackerCategory) throws {
         let categoryCoreData = TrackerCategoryCoreData(context: context)
         categoryCoreData.title = category.title
-        try context.save()
+        try CoreDataManager.shared.saveContext()
     }
-
+    
     func deleteCategory(_ category: TrackerCategoryCoreData) throws {
         context.delete(category)
-        try context.save()
+        try CoreDataManager.shared.saveContext()
     }
     
     func performFetch() throws {

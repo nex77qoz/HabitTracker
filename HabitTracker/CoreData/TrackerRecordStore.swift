@@ -1,4 +1,3 @@
-import UIKit
 import CoreData
 
 final class TrackerRecordStore: NSObject {
@@ -6,13 +5,8 @@ final class TrackerRecordStore: NSObject {
     private var fetchedResultsController: NSFetchedResultsController<TrackerRecordCoreData>?
     weak var delegate: TrackerRecordStoreDelegate?
     
-    convenience override init() {
-        let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
-        self.init(context: context)
-    }
-    
-    init(context: NSManagedObjectContext) {
-        self.context = context
+    override init() {
+        self.context = CoreDataManager.shared.context
         super.init()
         
         let request = NSFetchRequest<TrackerRecordCoreData>(entityName: "TrackerRecordCoreData")
@@ -26,7 +20,11 @@ final class TrackerRecordStore: NSObject {
         )
         fetchedResultsController?.delegate = self
         
-        try? fetchedResultsController?.performFetch()
+        do {
+            try fetchedResultsController?.performFetch()
+        } catch {
+            print("Failed to fetch records: \(error)")
+        }
     }
     
     var records: [TrackerRecordCoreData] {
@@ -38,7 +36,7 @@ final class TrackerRecordStore: NSObject {
         recordCoreData.trackerId = record.trackerId
         recordCoreData.date = record.date
         recordCoreData.tracker = tracker
-        try context.save()
+        try CoreDataManager.shared.saveContext()
     }
     
     func fetchRecords() throws -> [TrackerRecordCoreData] {
@@ -48,7 +46,7 @@ final class TrackerRecordStore: NSObject {
     
     func deleteRecord(_ record: TrackerRecordCoreData) throws {
         context.delete(record)
-        try context.save()
+        try CoreDataManager.shared.saveContext()
     }
 }
 
