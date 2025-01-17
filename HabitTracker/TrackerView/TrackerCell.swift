@@ -3,16 +3,15 @@
 import UIKit
 
 protocol TrackerCellDelegate: AnyObject {
-    func trackerCell(_ cell: TrackerCell, didToggleCompletionFor tracker: Tracker, at indexPath: IndexPath)
+    func trackerCell(_ cell: TrackerCell, didToggleCompletionFor tracker: TrackerCoreData, at indexPath: IndexPath)
 }
 
 
 final class TrackerCell: UICollectionViewCell {
-    
     static let identifier = "TrackerCell"
     
     weak var delegate: TrackerCellDelegate?
-    private var tracker: Tracker?
+    private var tracker: TrackerCoreData?
     private var isFutureDate: Bool = false
     var indexPath: IndexPath?
     
@@ -151,12 +150,15 @@ final class TrackerCell: UICollectionViewCell {
     
     // MARK: - Настройка ячеек
     
-    func configure(with tracker: Tracker, completed: Bool, daysCount: Int, isFutureDate: Bool) {
+    func configure(with tracker: TrackerCoreData, completed: Bool, daysCount: Int, isFutureDate: Bool) {
         self.tracker = tracker
         titleLabel.text = tracker.name
         emojiLabel.text = tracker.emoji
-        mainView.backgroundColor = color(from: tracker.color)
-        completeButtonContainer.backgroundColor = color(from: tracker.color)
+        
+        if let colorName = tracker.color {
+            mainView.backgroundColor = color(from: colorName)
+            completeButtonContainer.backgroundColor = color(from: colorName)
+        }
         
         let title = completed ? "✓" : "+"
         completeButton.setTitle(title, for: .normal)
@@ -165,11 +167,15 @@ final class TrackerCell: UICollectionViewCell {
         
         if isFutureDate {
             completeButton.isEnabled = false
-            completeButtonContainer.backgroundColor = color(from: tracker.color)
+            if let colorName = tracker.color {
+                completeButtonContainer.backgroundColor = color(from: colorName)
+            }
             completeButton.alpha = 0.5
         } else {
             completeButton.isEnabled = true
-            completeButtonContainer.backgroundColor = color(from: tracker.color)
+            if let colorName = tracker.color {
+                completeButtonContainer.backgroundColor = color(from: colorName)
+            }
             completeButton.alpha = 1.0
         }
     }

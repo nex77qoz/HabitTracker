@@ -1,19 +1,26 @@
 import UIKit
 
 protocol CategorySelectionDelegate: AnyObject {
-    func categorySelected(_ category: TrackerCategory)
+    func categorySelected(_ category: TrackerCategoryCoreData)
 }
 
 class CategorySelectionViewController: UIViewController {
     
-    private var categories = TrackerCategory.allCategories {
+    // MARK: - Properties
+    
+    private var categories: [TrackerCategoryCoreData] = [] {
         didSet {
             updatePlaceholderVisibility()
             tableView.reloadData()
         }
     }
+    
+    private let categoryStore = TrackerCategoryStore()
+    
     private var selectedCategoryIndex: IndexPath?
     weak var delegate: CategorySelectionDelegate?
+    
+    // MARK: - UI Elements
     
     private let titleLabel: UILabel = {
         let label = UILabel()
@@ -27,9 +34,10 @@ class CategorySelectionViewController: UIViewController {
     private let tableView: UITableView = {
         let table = UITableView()
         table.register(CustomTableViewCell.self, forCellReuseIdentifier: "CategoryCell")
-        table.translatesAutoresizingMaskIntoConstraints = false
         table.layer.cornerRadius = 16
         table.layer.masksToBounds = true
+        table.translatesAutoresizingMaskIntoConstraints = false
+        table.separatorStyle = .none
         return table
     }()
     
@@ -41,9 +49,6 @@ class CategorySelectionViewController: UIViewController {
         target: self
     )
     
-    
-    // MARK: - Placeholder View
-    
     private let placeholderView: UIView = {
         let view = UIView()
         view.translatesAutoresizingMaskIntoConstraints = false
@@ -54,7 +59,7 @@ class CategorySelectionViewController: UIViewController {
         imageView.translatesAutoresizingMaskIntoConstraints = false
         
         let label = UILabel()
-        label.text = "Привычки и события можно \n объединить по смыслу"
+        label.text = "Привычки и события можно \nобъединить по смыслу"
         label.font = UIFont.systemFont(ofSize: 12, weight: .regular)
         label.textColor = .black
         label.textAlignment = .center
@@ -73,38 +78,37 @@ class CategorySelectionViewController: UIViewController {
             label.topAnchor.constraint(equalTo: imageView.bottomAnchor, constant: 16),
             label.centerXAnchor.constraint(equalTo: view.centerXAnchor)
         ])
-        
         return view
     }()
     
-    // MARK: - View Lifecycle
+    // MARK: - Lifecycle
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Категория"
         view.backgroundColor = .white
+        title = "Категория"
         
         setupLayout()
+        setupPlaceholderLayout()
         
         tableView.dataSource = self
         tableView.delegate = self
-        tableView.separatorStyle = .none
-        
         tableView.tableFooterView = UIView()
         
-        view.addSubview(placeholderView)
-        setupPlaceholderLayout()
+        categories = categoryStore.categories
         
         updatePlaceholderVisibility()
-        addCategoryButton.translatesAutoresizingMaskIntoConstraints = false
     }
     
-    // MARK: - Setup
+    // MARK: - Layout
     
     private func setupLayout() {
         view.addSubview(titleLabel)
         view.addSubview(tableView)
         view.addSubview(addCategoryButton)
+        view.addSubview(placeholderView)
+        
+        addCategoryButton.translatesAutoresizingMaskIntoConstraints = false
         
         NSLayoutConstraint.activate([
             titleLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
@@ -139,25 +143,32 @@ class CategorySelectionViewController: UIViewController {
         present(categoryCreationVC, animated: true)
     }
     
-    // MARK: - Helper Methods
+    private func deleteCategory(_ category: TrackerCategoryCoreData, at indexPath: IndexPath) {
+        do {
+            try categoryStore.deleteCategory(category)
+            try categoryStore.performFetch()
+            categories = categoryStore.categories
+        } catch {
+            print("Error deleting category: \(error)")
+        }
+    }
+    
+    // MARK: - Helpers
     
     private func updatePlaceholderVisibility() {
-        if categories.isEmpty {
-            tableView.isHidden = true
-            placeholderView.isHidden = false
-        } else {
-            tableView.isHidden = false
-            placeholderView.isHidden = true
-        }
+        let isEmpty = categories.isEmpty
+        tableView.isHidden = isEmpty
+        placeholderView.isHidden = !isEmpty
     }
 }
 
 // MARK: - UITableViewDataSource & UITableViewDelegate
 
 extension CategorySelectionViewController: UITableViewDataSource, UITableViewDelegate {
+    
     func tableView(_ tableView: UITableView,
                    numberOfRowsInSection section: Int) -> Int {
-        return categories.count
+        categories.count
     }
     
     func tableView(_ tableView: UITableView,
@@ -166,13 +177,11 @@ extension CategorySelectionViewController: UITableViewDataSource, UITableViewDel
             withIdentifier: "CategoryCell",
             for: indexPath
         ) as! CustomTableViewCell
-        cell.textLabel?.text = categories[indexPath.row].title
+        let category = categories[indexPath.row]
+        cell.textLabel?.text = category.title
         cell.backgroundColor = .backgroundDay
-        if indexPath.row == categories.count - 1 {
-            cell.setSeparatorHidden(true)
-        } else {
-            cell.setSeparatorHidden(false)
-        }
+        let isLastRow = (indexPath.row == categories.count - 1)
+        cell.setSeparatorHidden(isLastRow)
         return cell
     }
     
@@ -180,16 +189,19 @@ extension CategorySelectionViewController: UITableViewDataSource, UITableViewDel
                    didSelectRowAt indexPath: IndexPath) {
         let chosenCategory = categories[indexPath.row]
         delegate?.categorySelected(chosenCategory)
-        dismiss(animated: true, completion: nil)
+        dismiss(animated: true)
     }
     
-    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+    func tableView(_ tableView: UITableView,
+                   heightForRowAt indexPath: IndexPath) -> CGFloat {
         75
     }
     
-    func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
+    func tableView(_ tableView: UITableView,
+                   willDisplay cell: UITableViewCell,
+                   forRowAt indexPath: IndexPath) {
         let corners: UIRectCorner
-        if indexPath.row == 0 && categories.count == 1{
+        if indexPath.row == 0 && categories.count == 1 {
             corners = [.topLeft, .topRight, .bottomLeft, .bottomRight]
         } else if indexPath.row == 0 {
             corners = [.topLeft, .topRight]
@@ -199,17 +211,46 @@ extension CategorySelectionViewController: UITableViewDataSource, UITableViewDel
             return
         }
         
-        let path = UIBezierPath(roundedRect: cell.bounds, byRoundingCorners: corners, cornerRadii: CGSize(width: 16, height: 16))
+        let path = UIBezierPath(
+            roundedRect: cell.bounds,
+            byRoundingCorners: corners,
+            cornerRadii: CGSize(width: 16, height: 16)
+        )
         let mask = CAShapeLayer()
         mask.path = path.cgPath
         cell.layer.mask = mask
+    }
+    
+    // MARK: - Built-in popup (context menu) for deleting a category
+    func tableView(_ tableView: UITableView,
+                   contextMenuConfigurationForRowAt indexPath: IndexPath,
+                   point: CGPoint) -> UIContextMenuConfiguration? {
+        let selectedCategory = categories[indexPath.row]
+        return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { [weak self] _ in
+            guard let self = self else { return UIMenu() }
+            
+            let deleteAction = UIAction(
+                title: "Удалить",
+                image: UIImage(systemName: "trash"),
+                attributes: .destructive
+            ) { _ in
+                self.deleteCategory(selectedCategory, at: indexPath)
+            }
+            
+            return UIMenu(title: "", children: [deleteAction])
+        }
     }
 }
 
 // MARK: - CategoryCreationDelegate
 extension CategorySelectionViewController: CategoryCreationDelegate {
-    func didCreateCategory(_ category: TrackerCategory) {
-        categories.append(category)
-        tableView.reloadData()
+    func didCreateCategory(_ newCategory: TrackerCategory) {
+        do {
+            try categoryStore.addCategory(newCategory)
+            try categoryStore.performFetch()
+            categories = categoryStore.categories
+        } catch {
+            print("Error adding category: \(error)")
+        }
     }
 }

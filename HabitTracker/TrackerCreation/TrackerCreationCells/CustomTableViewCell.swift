@@ -1,7 +1,3 @@
-//
-//  CustomTableViewCell.swift
-//  HabitTracker
-
 import UIKit
 
 class CustomTableViewCell: UITableViewCell {
