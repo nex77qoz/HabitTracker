@@ -1,1 +1,4 @@
 .vscode/settings.json
+*.xcassets
+*.xcuserstate
+HabitTracker.xcodeproj/project.xcworkspace/xcuserdata/nex77qoz.xcuserdatad/UserInterfaceState.xcuserstate

@@ -8,19 +8,15 @@
 import UIKit
 
 class OnboardingViewController: UIPageViewController, UIPageViewControllerDataSource, UIPageViewControllerDelegate {
-    
-    
+
     lazy var pages: [UIViewController] = {
-        let red = UIViewController()
-        red.view.backgroundColor = .red
+        let first = UIViewController()
+        first.view.backgroundColor = .red
 
-        let green = UIViewController()
-        green.view.backgroundColor = .green
+        let second = UIViewController()
+        second.view.backgroundColor = .green
 
-        let blue = UIViewController()
-        blue.view.backgroundColor = .blue
-
-        return [red, green, blue]
+        return [first, second]
     }()
 
     lazy var pageControl: UIPageControl = {
@@ -35,6 +31,13 @@ class OnboardingViewController: UIPageViewController, UIPageViewControllerDataSo
         return pageControl
     }()
 
+    lazy var okButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.setTitle("OK", for: .normal)
+        button.addTarget(self, action: #selector(okButtonTapped), for: .touchUpInside)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        return button
+    }()
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -47,10 +50,13 @@ class OnboardingViewController: UIPageViewController, UIPageViewControllerDataSo
         }
 
         view.addSubview(pageControl)
+        view.addSubview(okButton)
 
         NSLayoutConstraint.activate([
             pageControl.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-            pageControl.centerXAnchor.constraint(equalTo: view.centerXAnchor)
+            pageControl.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            okButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20),
+            okButton.centerXAnchor.constraint(equalTo: view.centerXAnchor)
         ])
     }
 
@@ -93,4 +99,11 @@ class OnboardingViewController: UIPageViewController, UIPageViewControllerDataSo
             pageControl.currentPage = currentIndex
         }
     }
+
+@objc func okButtonTapped() {
+    if let tabBarController = UIApplication.shared.keyWindow?.rootViewController as? UITabBarController {
+        tabBarController.selectedIndex = 0
+    }
+    self.dismiss(animated: true, completion: nil)
+}
 }
