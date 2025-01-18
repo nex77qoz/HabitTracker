@@ -1,6 +1,6 @@
 import UIKit
 
-class ViewController: UITabBarController {
+class TabBarViewController: UITabBarController {
 
     let trackerVC = TrackerViewController()
     let statsVC = StatsViewController()

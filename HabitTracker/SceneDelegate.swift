@@ -10,8 +10,17 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = (scene as? UIWindowScene) else { return }
         
         let window = UIWindow(windowScene: windowScene)
-        let tabBarController = OnboardingViewController()
-        window.rootViewController = tabBarController
+        
+        let hasSeenOnboarding = UserDefaults.standard.bool(forKey: "hasSeenOnboarding")
+        
+        if hasSeenOnboarding {
+            let tabBarController = TabBarViewController()
+            window.rootViewController = tabBarController
+        } else {
+            let onboardingVC = OnboardingViewController()
+            window.rootViewController = onboardingVC
+        }
+        
         self.window = window
         window.makeKeyAndVisible()
     }

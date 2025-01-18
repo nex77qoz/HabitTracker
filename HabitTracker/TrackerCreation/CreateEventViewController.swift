@@ -309,7 +309,7 @@ final class CreateEventViewController: UIViewController {
             dismiss(animated: true, completion: nil)
         } else {
             if let window = UIApplication.shared.windows.first {
-                let tabBarController = ViewController()
+                let tabBarController = TabBarViewController()
                 window.rootViewController = tabBarController
                 window.makeKeyAndVisible()
             }

@@ -75,7 +75,8 @@ class OnboardingViewController: UIPageViewController, UIPageViewControllerDataSo
     
     // MARK: - UIPageViewControllerDataSource
     
-    func pageViewController(_ pageViewController: UIPageViewController, viewControllerBefore viewController: UIViewController) -> UIViewController? {
+    func pageViewController(_ pageViewController: UIPageViewController,
+                            viewControllerBefore viewController: UIViewController) -> UIViewController? {
         guard let viewControllerIndex = pages.firstIndex(of: viewController) else {
             return nil
         }
@@ -89,7 +90,8 @@ class OnboardingViewController: UIPageViewController, UIPageViewControllerDataSo
         return pages[previousIndex]
     }
     
-    func pageViewController(_ pageViewController: UIPageViewController, viewControllerAfter viewController: UIViewController) -> UIViewController? {
+    func pageViewController(_ pageViewController: UIPageViewController,
+                            viewControllerAfter viewController: UIViewController) -> UIViewController? {
         guard let viewControllerIndex = pages.firstIndex(of: viewController) else {
             return nil
         }
@@ -105,7 +107,10 @@ class OnboardingViewController: UIPageViewController, UIPageViewControllerDataSo
     
     // MARK: - UIPageViewControllerDelegate
     
-    func pageViewController(_ pageViewController: UIPageViewController, didFinishAnimating finished: Bool, previousViewControllers: [UIViewController], transitionCompleted completed: Bool) {
+    func pageViewController(_ pageViewController: UIPageViewController,
+                            didFinishAnimating finished: Bool,
+                            previousViewControllers: [UIViewController],
+                            transitionCompleted completed: Bool) {
         
         if let currentViewController = pageViewController.viewControllers?.first,
            let currentIndex = pages.firstIndex(of: currentViewController) {
@@ -116,7 +121,9 @@ class OnboardingViewController: UIPageViewController, UIPageViewControllerDataSo
     // MARK: - Действия
     
     @objc func okButtonTapped() {
-        let tabBarController = ViewController()
+        UserDefaults.standard.set(true, forKey: "hasSeenOnboarding")
+        
+        let tabBarController = TabBarViewController()
         tabBarController.modalPresentationStyle = .fullScreen
         present(tabBarController, animated: true, completion: nil)
     }
