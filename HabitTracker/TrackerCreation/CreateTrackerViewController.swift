@@ -70,16 +70,14 @@ final class CreateTrackerViewController: UIViewController {
     // MARK: - Actions
     
     @objc private func habitButtonTapped() {
-        let createScheduledEventVC = CreateScheduledEventViewController()
-        createScheduledEventVC.modalPresentationStyle = .pageSheet
-        
-        present(createScheduledEventVC, animated: true, completion: nil)
+        let createEventVC = CreateEventViewController(isScheduled: true)
+        createEventVC.modalPresentationStyle = .pageSheet
+        present(createEventVC, animated: true)
     }
-    
+
     @objc private func irregularEventButtonTapped() {
-        let createIrregularEventVC = CreateIrregularEventViewController()
-        createIrregularEventVC.modalPresentationStyle = .pageSheet
-        
-        present(createIrregularEventVC, animated: true, completion: nil)
+        let createEventVC = CreateEventViewController(isScheduled: false)
+        createEventVC.modalPresentationStyle = .pageSheet
+        present(createEventVC, animated: true)
     }
 }

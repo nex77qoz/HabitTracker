@@ -168,6 +168,12 @@ extension TrackerViewController: UICollectionViewDelegateFlowLayout {
         let width = (collectionView.frame.width - totalSpacing) / 2
         return CGSize(width: width, height: 175)
     }
+    
+    func collectionView(_ collectionView: UICollectionView,
+                        layout collectionViewLayout: UICollectionViewLayout,
+                        referenceSizeForHeaderInSection section: Int) -> CGSize {
+        return CGSize(width: collectionView.frame.width, height: 50)
+    }
 }
 
 // MARK: - UICollectionViewDelegate
