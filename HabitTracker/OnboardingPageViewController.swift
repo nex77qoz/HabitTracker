@@ -1,6 +1,6 @@
 import UIKit
 
-class OnboardingPageViewController: UIViewController {
+final class OnboardingPageViewController: UIViewController {
     private let displayText: String
 
     init(imageName: String, text: String) {

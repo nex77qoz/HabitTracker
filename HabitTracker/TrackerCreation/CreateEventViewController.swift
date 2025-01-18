@@ -16,11 +16,7 @@ final class CreateEventViewController: UIViewController {
     private let weekdays = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
     
     private var settingsOptions: [String] {
-        if isScheduled {
-            return ["Выбрать категорию", "Расписание"]
-        } else {
-            return ["Выбрать категорию"]
-        }
+        isScheduled ? ["Выбрать категорию", "Расписание"] : ["Выбрать категорию"]
     }
     
     // MARK: - Model
@@ -36,7 +32,6 @@ final class CreateEventViewController: UIViewController {
         let label = UILabel()
         label.font = UIFont.systemFont(ofSize: 16, weight: .medium)
         label.textAlignment = .center
-        label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }()
     
@@ -49,7 +44,6 @@ final class CreateEventViewController: UIViewController {
         textField.layer.cornerRadius = 16
         textField.leftView = UIView(frame: CGRect(x: 0, y: 0, width: 16, height: 0))
         textField.leftViewMode = .always
-        textField.translatesAutoresizingMaskIntoConstraints = false
         return textField
     }()
     
@@ -62,7 +56,6 @@ final class CreateEventViewController: UIViewController {
         table.layer.masksToBounds = true
         table.separatorStyle = .none
         table.isScrollEnabled = false
-        table.translatesAutoresizingMaskIntoConstraints = false
         return table
     }()
     
@@ -187,8 +180,6 @@ final class CreateEventViewController: UIViewController {
         updateCreateButtonState()
     }
     
-    // MARK: - Layout
-    
     private func setupConstraints() {
         [titleLabel,
          nameTextField,
@@ -249,7 +240,7 @@ final class CreateEventViewController: UIViewController {
         ])
     }
     
-    func reloadCollectionViewHeight() {
+    private func reloadCollectionViewHeight() {
         DispatchQueue.main.async {
             self.emojiCollectionView.layoutIfNeeded()
             self.emojiCollectionViewHeightConstraint.constant = self.emojiCollectionView.contentSize.height
@@ -304,7 +295,7 @@ final class CreateEventViewController: UIViewController {
             userInfo: ["category": category]
         )
         
-        if let tabBarController = self.presentingViewController as? UITabBarController {
+        if let tabBarController = presentingViewController as? UITabBarController {
             tabBarController.selectedIndex = 0
             dismiss(animated: true, completion: nil)
         } else {
@@ -326,9 +317,9 @@ final class CreateEventViewController: UIViewController {
     
     private func updateCreateButtonState() {
         let hasName = !(nameTextField.text?.trimmingCharacters(in: .whitespaces).isEmpty ?? true)
-        let hasCategory = (selectedCategory != nil)
-        let hasEmoji = (selectedEmoji != nil)
-        let hasColor = (selectedColor != nil)
+        let hasCategory = selectedCategory != nil
+        let hasEmoji = selectedEmoji != nil
+        let hasColor = selectedColor != nil
         
         if isScheduled {
             let hasScheduleDays = !selectedWeekdays.isEmpty
@@ -450,20 +441,30 @@ extension CreateEventViewController: UICollectionViewDataSource, UICollectionVie
     
     func collectionView(_ collectionView: UICollectionView,
                         numberOfItemsInSection section: Int) -> Int {
-        return (collectionView == emojiCollectionView) ? emojis.count : colors.count
+        collectionView == emojiCollectionView ? emojis.count : colors.count
     }
     
     func collectionView(_ collectionView: UICollectionView,
                         cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         if collectionView == emojiCollectionView {
-            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: EmojiCell.identifier, for: indexPath) as! EmojiCell
+            guard let cell = collectionView.dequeueReusableCell(
+                withReuseIdentifier: EmojiCell.identifier,
+                for: indexPath
+            ) as? EmojiCell else {
+                return UICollectionViewCell()
+            }
             let emoji = emojis[indexPath.item]
-            cell.configure(with: emoji, isSelected: (emoji == selectedEmoji))
+            cell.configure(with: emoji, isSelected: emoji == selectedEmoji)
             return cell
         } else {
-            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: ColorCell.identifier, for: indexPath) as! ColorCell
+            guard let cell = collectionView.dequeueReusableCell(
+                withReuseIdentifier: ColorCell.identifier,
+                for: indexPath
+            ) as? ColorCell else {
+                return UICollectionViewCell()
+            }
             let colorName = colors[indexPath.item]
-            cell.configure(with: colorName, isSelected: (colorName == selectedColor))
+            cell.configure(with: colorName, isSelected: colorName == selectedColor)
             return cell
         }
     }

@@ -1,6 +1,6 @@
 import UIKit
 
-class CategoryCreationVC: UIViewController {
+final class CategoryCreationVC: UIViewController {
     private let nameTextFieldMaxLength = 38
     
     private let titleLabel: UILabel = {

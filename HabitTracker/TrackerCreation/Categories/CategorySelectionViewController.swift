@@ -4,7 +4,7 @@ protocol CategorySelectionDelegate: AnyObject {
     func categorySelected(_ category: TrackerCategoryCoreData)
 }
 
-class CategorySelectionViewController: UIViewController {
+final class CategorySelectionViewController: UIViewController {
     
     // MARK: - Public API
     

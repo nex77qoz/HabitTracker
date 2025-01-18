@@ -1,6 +1,6 @@
 import UIKit
 
-class OnboardingViewController: UIPageViewController, UIPageViewControllerDataSource, UIPageViewControllerDelegate {
+final class OnboardingViewController: UIPageViewController, UIPageViewControllerDataSource, UIPageViewControllerDelegate {
     
     // MARK: - Инициализаторы
     
@@ -14,7 +14,7 @@ class OnboardingViewController: UIPageViewController, UIPageViewControllerDataSo
     
     // MARK: - Свойства
     
-    lazy var pages: [UIViewController] = {
+    private lazy var pages: [UIViewController] = {
         let first = OnboardingPageViewController(
             imageName: "OnboardingBackground_1",
             text: "Отслеживайте только то, что хотите"
@@ -26,7 +26,7 @@ class OnboardingViewController: UIPageViewController, UIPageViewControllerDataSo
         return [first, second]
     }()
     
-    lazy var pageControl: UIPageControl = {
+    private lazy var pageControl: UIPageControl = {
         let pageControl = UIPageControl()
         pageControl.numberOfPages = pages.count
         pageControl.currentPage = 0
@@ -120,7 +120,7 @@ class OnboardingViewController: UIPageViewController, UIPageViewControllerDataSo
     
     // MARK: - Действия
     
-    @objc func okButtonTapped() {
+    @objc private func okButtonTapped() {
         UserDefaults.standard.set(true, forKey: "hasSeenOnboarding")
         
         let tabBarController = TabBarViewController()
