@@ -137,6 +137,7 @@ final class CreateScheduledEventViewController: UIViewController, CategorySelect
         view.backgroundColor = .white
         view.addSubview(scrollView)
         scrollView.addSubview(contentScrollView)
+        
         contentScrollView.addSubview(titleLabel)
         contentScrollView.addSubview(nameTextField)
         contentScrollView.addSubview(tableView)
@@ -146,35 +147,45 @@ final class CreateScheduledEventViewController: UIViewController, CategorySelect
         contentScrollView.addSubview(colorCollectionView)
         contentScrollView.addSubview(cancelButton)
         contentScrollView.addSubview(createButton)
+        
         setupConstraints()
+        
         emojiCollectionView.delegate = self
         emojiCollectionView.dataSource = self
         colorCollectionView.delegate = self
         colorCollectionView.dataSource = self
         tableView.delegate = self
         tableView.dataSource = self
+        
         nameTextField.addTarget(self, action: #selector(textFieldDidChange), for: .editingChanged)
         updateCreateButtonState()
+        
         cancelButton.layer.borderWidth = 1
         cancelButton.layer.borderColor = UIColor.systemRed.cgColor
+        
         reloadCollectionViewHeight()
         emojiCollectionView.reloadData()
         colorCollectionView.reloadData()
     }
     
+    // MARK: - CategorySelectionDelegate
     func categorySelected(_ category: TrackerCategoryCoreData) {
         selectedCategory = category
         tableView.reloadData()
         updateCreateButtonState()
     }
     
+    // MARK: - ScheduleSelectionDelegate
     func scheduleSelected(_ selectedDays: Set<String>) {
         selectedWeekdays = selectedDays
         tableView.reloadData()
         updateCreateButtonState()
     }
     
-    func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
+    // MARK: - UITextFieldDelegate
+    func textField(_ textField: UITextField,
+                   shouldChangeCharactersIn range: NSRange,
+                   replacementString string: String) -> Bool {
         guard textField == nameTextField else {
             return true
         }
@@ -183,6 +194,7 @@ final class CreateScheduledEventViewController: UIViewController, CategorySelect
             return false
         }
         let updatedText = currentText.replacingCharacters(in: stringRange, with: string)
+        
         if updatedText.count > nameTextFieldMaxLength {
             showMaxLengthAlert()
             return false
@@ -194,7 +206,11 @@ final class CreateScheduledEventViewController: UIViewController, CategorySelect
         if presentedViewController is UIAlertController {
             return
         }
-        let alert = UIAlertController(title: "Превышен лимит символов", message: "Название трекера не может превышать \(nameTextFieldMaxLength) символов.", preferredStyle: .alert)
+        let alert = UIAlertController(
+            title: "Превышен лимит символов",
+            message: "Название трекера не может превышать \(nameTextFieldMaxLength) символов.",
+            preferredStyle: .alert
+        )
         alert.addAction(UIAlertAction(title: "OK", style: .default))
         present(alert, animated: true)
     }
@@ -218,23 +234,29 @@ final class CreateScheduledEventViewController: UIViewController, CategorySelect
             present(alert, animated: true)
             return
         }
+        
         let daysOfWeek = weekdays.map { selectedWeekdays.contains($0) }
         let schedule = Schedule(daysOfWeek: daysOfWeek)
         let newTracker = Tracker(id: UUID(), name: name, color: color, emoji: emoji, schedule: schedule)
+        
         NotificationCenter.default.post(name: .didCreateTracker, object: newTracker, userInfo: ["category": category])
         presentingViewController?.presentingViewController?.dismiss(animated: true, completion: nil)
     }
     
+    /// Updated to use the ViewModel initializer
     @objc private func selectCategory() {
-        let categorySelectionVC = CategorySelectionViewController()
+        let store = TrackerCategoryStore()
+        let viewModel = CategorySelectionViewModel(categoryStore: store)
+        let categorySelectionVC = CategorySelectionViewController(viewModel: viewModel)
         categorySelectionVC.delegate = self
-        categorySelectionVC.modalPresentationStyle = .pageSheet
+        categorySelectionVC.modalPresentationStyle = UIModalPresentationStyle.pageSheet
         present(categorySelectionVC, animated: true, completion: nil)
     }
     
     private func updateCreateButtonState() {
         let filledName = !(nameTextField.text?.trimmingCharacters(in: .whitespaces).isEmpty ?? true)
         let validForm = filledName && selectedCategory != nil && selectedEmoji != nil && selectedColor != nil && !selectedWeekdays.isEmpty
+        
         if validForm {
             createButton.backgroundColor = .black
             createButton.isEnabled = true
@@ -247,48 +269,60 @@ final class CreateScheduledEventViewController: UIViewController, CategorySelect
     private func setupConstraints() {
         emojiCollectionView.translatesAutoresizingMaskIntoConstraints = false
         colorCollectionView.translatesAutoresizingMaskIntoConstraints = false
+        
         emojiCollectionViewHeightConstraint = emojiCollectionView.heightAnchor.constraint(equalToConstant: 150)
         emojiCollectionViewHeightConstraint.isActive = true
         colorCollectionViewHeightConstraint = colorCollectionView.heightAnchor.constraint(equalToConstant: 150)
         colorCollectionViewHeightConstraint.isActive = true
+        
         NSLayoutConstraint.activate([
             scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             scrollView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
+            
             contentScrollView.topAnchor.constraint(equalTo: scrollView.topAnchor),
             contentScrollView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
             contentScrollView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
             contentScrollView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
             contentScrollView.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
+            
             titleLabel.topAnchor.constraint(equalTo: contentScrollView.topAnchor, constant: 16),
             titleLabel.centerXAnchor.constraint(equalTo: contentScrollView.centerXAnchor),
             titleLabel.widthAnchor.constraint(equalTo: contentScrollView.widthAnchor, multiplier: 0.9),
+            
             nameTextField.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 16),
             nameTextField.centerXAnchor.constraint(equalTo: contentScrollView.centerXAnchor),
             nameTextField.widthAnchor.constraint(equalTo: contentScrollView.widthAnchor, multiplier: 0.9),
             nameTextField.heightAnchor.constraint(equalToConstant: 75),
+            
             tableView.topAnchor.constraint(equalTo: nameTextField.bottomAnchor, constant: 16),
             tableView.centerXAnchor.constraint(equalTo: contentScrollView.centerXAnchor),
             tableView.widthAnchor.constraint(equalTo: contentScrollView.widthAnchor, multiplier: 0.9),
             tableView.heightAnchor.constraint(equalToConstant: 150),
+            
             emojiLabel.topAnchor.constraint(equalTo: tableView.bottomAnchor, constant: 16),
             emojiLabel.centerXAnchor.constraint(equalTo: contentScrollView.centerXAnchor),
             emojiLabel.widthAnchor.constraint(equalTo: contentScrollView.widthAnchor, multiplier: 0.9),
+            
             emojiCollectionView.topAnchor.constraint(equalTo: emojiLabel.bottomAnchor, constant: 8),
             emojiCollectionView.centerXAnchor.constraint(equalTo: contentScrollView.centerXAnchor),
             emojiCollectionView.widthAnchor.constraint(equalTo: contentScrollView.widthAnchor, multiplier: 0.9),
+            
             colorLabel.topAnchor.constraint(equalTo: emojiCollectionView.bottomAnchor, constant: 16),
             colorLabel.centerXAnchor.constraint(equalTo: contentScrollView.centerXAnchor),
             colorLabel.widthAnchor.constraint(equalTo: contentScrollView.widthAnchor, multiplier: 0.9),
+            
             colorCollectionView.topAnchor.constraint(equalTo: colorLabel.bottomAnchor, constant: 8),
             colorCollectionView.centerXAnchor.constraint(equalTo: contentScrollView.centerXAnchor),
             colorCollectionView.widthAnchor.constraint(equalTo: contentScrollView.widthAnchor, multiplier: 0.9),
             colorCollectionView.bottomAnchor.constraint(equalTo: cancelButton.topAnchor, constant: -16),
+            
             cancelButton.bottomAnchor.constraint(equalTo: contentScrollView.bottomAnchor, constant: -16),
             cancelButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             cancelButton.heightAnchor.constraint(equalToConstant: 60),
             cancelButton.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 0.45),
+            
             createButton.bottomAnchor.constraint(equalTo: contentScrollView.bottomAnchor, constant: -16),
             createButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
             createButton.heightAnchor.constraint(equalToConstant: 60),
@@ -306,6 +340,7 @@ final class CreateScheduledEventViewController: UIViewController, CategorySelect
     }
 }
 
+// MARK: - UITableViewDataSource, UITableViewDelegate
 extension CreateScheduledEventViewController: UITableViewDataSource, UITableViewDelegate {
     func numberOfSections(in tableView: UITableView) -> Int {
         1
@@ -315,16 +350,19 @@ extension CreateScheduledEventViewController: UITableViewDataSource, UITableView
         settingsOptions.count
     }
     
-    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+    func tableView(_ tableView: UITableView,
+                   heightForRowAt indexPath: IndexPath) -> CGFloat {
         75
     }
     
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+    func tableView(_ tableView: UITableView,
+                   cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "SettingsCell", for: indexPath)
         cell.selectionStyle = .none
         cell.accessoryType = .disclosureIndicator
         cell.backgroundColor = .backgroundDay
         cell.textLabel?.font = UIFont.systemFont(ofSize: 16)
+        
         if indexPath.row == 0 {
             let separator = UIView()
             separator.backgroundColor = .lightGray
@@ -337,6 +375,7 @@ extension CreateScheduledEventViewController: UITableViewDataSource, UITableView
                 separator.bottomAnchor.constraint(equalTo: cell.contentView.bottomAnchor)
             ])
         }
+        
         let option = settingsOptions[indexPath.row]
         switch option {
         case "Выбрать категорию":
@@ -360,12 +399,14 @@ extension CreateScheduledEventViewController: UITableViewDataSource, UITableView
         default:
             cell.textLabel?.attributedText = NSAttributedString(string: option, attributes: [.foregroundColor: UIColor.black])
         }
+        
         cell.textLabel?.numberOfLines = 0
         cell.textLabel?.textAlignment = .left
         return cell
     }
     
-    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+    func tableView(_ tableView: UITableView,
+                   didSelectRowAt indexPath: IndexPath) {
         let option = settingsOptions[indexPath.row]
         switch option {
         case "Выбрать категорию":
@@ -382,8 +423,10 @@ extension CreateScheduledEventViewController: UITableViewDataSource, UITableView
     }
 }
 
+// MARK: - UICollectionViewDataSource, UICollectionViewDelegate
 extension CreateScheduledEventViewController: UICollectionViewDataSource, UICollectionViewDelegate {
-    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+    func collectionView(_ collectionView: UICollectionView,
+                        numberOfItemsInSection section: Int) -> Int {
         if collectionView == emojiCollectionView {
             return emojis.count
         } else {
@@ -391,7 +434,8 @@ extension CreateScheduledEventViewController: UICollectionViewDataSource, UIColl
         }
     }
     
-    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+    func collectionView(_ collectionView: UICollectionView,
+                        cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         if collectionView == emojiCollectionView {
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: EmojiCell.identifier, for: indexPath) as! EmojiCell
             let e = emojis[indexPath.item]
@@ -407,7 +451,8 @@ extension CreateScheduledEventViewController: UICollectionViewDataSource, UIColl
         }
     }
     
-    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+    func collectionView(_ collectionView: UICollectionView,
+                        didSelectItemAt indexPath: IndexPath) {
         if collectionView == emojiCollectionView {
             selectedEmoji = emojis[indexPath.item]
             collectionView.reloadData()

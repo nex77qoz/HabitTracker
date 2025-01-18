@@ -103,6 +103,7 @@ final class CreateIrregularEventViewController: UIViewController, CategorySelect
         categoryTableView.delegate = self
         categoryTableView.dataSource = self
         categoryTableView.register(UITableViewCell.self, forCellReuseIdentifier: "CategoryCell")
+        
         view.addSubview(titleLabel)
         view.addSubview(nameTextField)
         view.addSubview(categoryTableView)
@@ -112,22 +113,28 @@ final class CreateIrregularEventViewController: UIViewController, CategorySelect
         view.addSubview(colorCollectionView)
         view.addSubview(cancelButton)
         view.addSubview(createButton)
+        
         setupConstraints()
+        
         nameTextField.delegate = self
         nameTextField.addTarget(self, action: #selector(textFieldDidChange), for: .editingChanged)
         updateCreateButtonState()
         reloadCollectionViewHeight()
         emojiCollectionView.reloadData()
         colorCollectionView.reloadData()
+        
         cancelButton.layer.borderWidth = 1
         cancelButton.layer.borderColor = UIColor.systemRed.cgColor
     }
     
+    // MARK: - CategorySelectionDelegate
     func categorySelected(_ category: TrackerCategoryCoreData) {
         selectedCategory = category
         categoryTableView.reloadData()
         updateCreateButtonState()
     }
+    
+    // MARK: - Actions / Helpers
     
     @objc private func textFieldDidChange() {
         updateCreateButtonState()
@@ -147,15 +154,20 @@ final class CreateIrregularEventViewController: UIViewController, CategorySelect
             present(alert, animated: true)
             return
         }
+        
         let newTracker = Tracker(id: UUID(), name: name, color: color, emoji: emoji, schedule: nil)
         NotificationCenter.default.post(name: .didCreateTracker, object: newTracker, userInfo: ["category": category])
+        
         presentingViewController?.presentingViewController?.dismiss(animated: true, completion: nil)
     }
     
+    /// Updated to use the ViewModel initializer
     @objc private func selectCategory() {
-        let categorySelectionVC = CategorySelectionViewController()
+        let store = TrackerCategoryStore()
+        let viewModel = CategorySelectionViewModel(categoryStore: store)
+        let categorySelectionVC = CategorySelectionViewController(viewModel: viewModel)
         categorySelectionVC.delegate = self
-        categorySelectionVC.modalPresentationStyle = .pageSheet
+        categorySelectionVC.modalPresentationStyle = UIModalPresentationStyle.pageSheet
         present(categorySelectionVC, animated: true, completion: nil)
     }
     
@@ -164,6 +176,7 @@ final class CreateIrregularEventViewController: UIViewController, CategorySelect
         && selectedCategory != nil
         && selectedEmoji != nil
         && selectedColor != nil
+        
         if isFormValid {
             createButton.backgroundColor = .black
             createButton.isEnabled = true
@@ -172,6 +185,8 @@ final class CreateIrregularEventViewController: UIViewController, CategorySelect
             createButton.isEnabled = false
         }
     }
+    
+    // MARK: - Layout
     
     private func setupConstraints() {
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -183,66 +198,51 @@ final class CreateIrregularEventViewController: UIViewController, CategorySelect
         colorCollectionView.translatesAutoresizingMaskIntoConstraints = false
         cancelButton.translatesAutoresizingMaskIntoConstraints = false
         createButton.translatesAutoresizingMaskIntoConstraints = false
+        
         emojiCollectionViewHeightConstraint = emojiCollectionView.heightAnchor.constraint(equalToConstant: 150)
         emojiCollectionViewHeightConstraint.isActive = true
         colorCollectionViewHeightConstraint = colorCollectionView.heightAnchor.constraint(equalToConstant: 150)
         colorCollectionViewHeightConstraint.isActive = true
+        
         NSLayoutConstraint.activate([
             titleLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
             titleLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             titleLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            
             nameTextField.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 16),
             nameTextField.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             nameTextField.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
             nameTextField.heightAnchor.constraint(equalToConstant: 75),
+            
             categoryTableView.topAnchor.constraint(equalTo: nameTextField.bottomAnchor, constant: 16),
             categoryTableView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             categoryTableView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
             categoryTableView.heightAnchor.constraint(equalToConstant: 75),
+            
             emojiLabel.topAnchor.constraint(equalTo: categoryTableView.bottomAnchor, constant: 16),
             emojiLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+            
             emojiCollectionView.topAnchor.constraint(equalTo: emojiLabel.bottomAnchor, constant: 8),
             emojiCollectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
             emojiCollectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+            
             colorLabel.topAnchor.constraint(equalTo: emojiCollectionView.bottomAnchor, constant: 16),
             colorLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+            
             colorCollectionView.topAnchor.constraint(equalTo: colorLabel.bottomAnchor, constant: 8),
             colorCollectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
             colorCollectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+            
             cancelButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
             cancelButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             cancelButton.heightAnchor.constraint(equalToConstant: 60),
             cancelButton.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 0.45),
+            
             createButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
             createButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
             createButton.heightAnchor.constraint(equalToConstant: 60),
             createButton.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 0.45)
         ])
-    }
-    
-    func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
-        guard textField == nameTextField else {
-            return true
-        }
-        let currentText = textField.text ?? ""
-        guard let stringRange = Range(range, in: currentText) else {
-            return false
-        }
-        let updatedText = currentText.replacingCharacters(in: stringRange, with: string)
-        if updatedText.count > nameTextFieldMaxLength {
-            showMaxLengthAlert()
-            return false
-        }
-        return true
-    }
-    
-    private func showMaxLengthAlert() {
-        if presentedViewController is UIAlertController {
-            return
-        }
-        let alert = UIAlertController(title: "Превышен лимит символов", message: "Название трекера не может превышать \(nameTextFieldMaxLength) символов.", preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "OK", style: .default))
-        present(alert, animated: true)
     }
     
     func reloadCollectionViewHeight() {
@@ -255,6 +255,7 @@ final class CreateIrregularEventViewController: UIViewController, CategorySelect
     }
 }
 
+// MARK: - UITableViewDataSource, UITableViewDelegate
 extension CreateIrregularEventViewController: UITableViewDataSource, UITableViewDelegate {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         1
@@ -268,6 +269,7 @@ extension CreateIrregularEventViewController: UITableViewDataSource, UITableView
         let cell = tableView.dequeueReusableCell(withIdentifier: "CategoryCell", for: indexPath)
         cell.textLabel?.numberOfLines = 0
         cell.textLabel?.textAlignment = .left
+        
         if let category = selectedCategory {
             let attributedText = NSMutableAttributedString(string: "Категория:\n", attributes: [.foregroundColor: UIColor.black])
             let categoryNameAttributed = NSAttributedString(string: category.title ?? "", attributes: [.foregroundColor: UIColor.gray])
@@ -277,6 +279,7 @@ extension CreateIrregularEventViewController: UITableViewDataSource, UITableView
             cell.textLabel?.text = "Выбрать категорию"
             cell.textLabel?.textColor = .black
         }
+        
         cell.selectionStyle = .none
         cell.backgroundColor = .backgroundDay
         cell.layer.cornerRadius = 16
@@ -289,6 +292,7 @@ extension CreateIrregularEventViewController: UITableViewDataSource, UITableView
     }
 }
 
+// MARK: - UICollectionViewDataSource, UICollectionViewDelegate
 extension CreateIrregularEventViewController: UICollectionViewDataSource, UICollectionViewDelegate {
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         collectionView == emojiCollectionView ? emojis.count : colors.count

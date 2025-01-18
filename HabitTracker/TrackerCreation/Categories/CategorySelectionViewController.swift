@@ -6,7 +6,11 @@ protocol CategorySelectionDelegate: AnyObject {
 
 class CategorySelectionViewController: UIViewController {
     
-    // MARK: - Properties
+    // MARK: - Public API
+    
+    weak var delegate: CategorySelectionDelegate?
+    
+    // MARK: - Private Properties
     
     private var categories: [TrackerCategoryCoreData] = [] {
         didSet {
@@ -15,10 +19,7 @@ class CategorySelectionViewController: UIViewController {
         }
     }
     
-    private let categoryStore = TrackerCategoryStore()
-    
-    private var selectedCategoryIndex: IndexPath?
-    weak var delegate: CategorySelectionDelegate?
+    private let viewModel: CategorySelectionViewModel
     
     // MARK: - UI Elements
     
@@ -81,6 +82,17 @@ class CategorySelectionViewController: UIViewController {
         return view
     }()
     
+    // MARK: - Init
+    
+    init(viewModel: CategorySelectionViewModel) {
+        self.viewModel = viewModel
+        super.init(nibName: nil, bundle: nil)
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
     // MARK: - Lifecycle
     
     override func viewDidLoad() {
@@ -93,11 +105,24 @@ class CategorySelectionViewController: UIViewController {
         
         tableView.dataSource = self
         tableView.delegate = self
-        tableView.tableFooterView = UIView()
         
-        categories = categoryStore.categories
+        bindViewModel()
         
-        updatePlaceholderVisibility()
+        viewModel.fetchCategories()
+    }
+    
+    // MARK: - Bindings
+    
+    private func bindViewModel() {
+        viewModel.onCategoriesChange = { [weak self] updatedCategories in
+            self?.categories = updatedCategories
+        }
+        
+        viewModel.onCategorySelected = { [weak self] selectedCategory in
+            guard let self = self else { return }
+            self.delegate?.categorySelected(selectedCategory)
+            self.dismiss(animated: true, completion: nil)
+        }
     }
     
     // MARK: - Layout
@@ -107,7 +132,6 @@ class CategorySelectionViewController: UIViewController {
         view.addSubview(tableView)
         view.addSubview(addCategoryButton)
         view.addSubview(placeholderView)
-        
         addCategoryButton.translatesAutoresizingMaskIntoConstraints = false
         
         NSLayoutConstraint.activate([
@@ -135,6 +159,14 @@ class CategorySelectionViewController: UIViewController {
         ])
     }
     
+    // MARK: - Helpers
+    
+    private func updatePlaceholderVisibility() {
+        let isEmpty = categories.isEmpty
+        tableView.isHidden = isEmpty
+        placeholderView.isHidden = !isEmpty
+    }
+    
     // MARK: - Actions
     
     @objc private func addCategoryTapped() {
@@ -143,29 +175,13 @@ class CategorySelectionViewController: UIViewController {
         present(categoryCreationVC, animated: true)
     }
     
-    private func deleteCategory(_ category: TrackerCategoryCoreData, at indexPath: IndexPath) {
-        do {
-            try categoryStore.deleteCategory(category)
-            try categoryStore.performFetch()
-            categories = categoryStore.categories
-        } catch {
-            print("Error deleting category: \(error)")
-        }
-    }
-    
-    // MARK: - Helpers
-    
-    private func updatePlaceholderVisibility() {
-        let isEmpty = categories.isEmpty
-        tableView.isHidden = isEmpty
-        placeholderView.isHidden = !isEmpty
+    private func deleteCategory(at indexPath: IndexPath) {
+        viewModel.deleteCategory(at: indexPath.row)
     }
 }
 
 // MARK: - UITableViewDataSource & UITableViewDelegate
-
 extension CategorySelectionViewController: UITableViewDataSource, UITableViewDelegate {
-    
     func tableView(_ tableView: UITableView,
                    numberOfRowsInSection section: Int) -> Int {
         categories.count
@@ -178,8 +194,10 @@ extension CategorySelectionViewController: UITableViewDataSource, UITableViewDel
             for: indexPath
         ) as! CustomTableViewCell
         let category = categories[indexPath.row]
+        
         cell.textLabel?.text = category.title
         cell.backgroundColor = .backgroundDay
+        
         let isLastRow = (indexPath.row == categories.count - 1)
         cell.setSeparatorHidden(isLastRow)
         return cell
@@ -187,9 +205,7 @@ extension CategorySelectionViewController: UITableViewDataSource, UITableViewDel
     
     func tableView(_ tableView: UITableView,
                    didSelectRowAt indexPath: IndexPath) {
-        let chosenCategory = categories[indexPath.row]
-        delegate?.categorySelected(chosenCategory)
-        dismiss(animated: true)
+        viewModel.selectCategory(at: indexPath.row)
     }
     
     func tableView(_ tableView: UITableView,
@@ -225,18 +241,15 @@ extension CategorySelectionViewController: UITableViewDataSource, UITableViewDel
     func tableView(_ tableView: UITableView,
                    contextMenuConfigurationForRowAt indexPath: IndexPath,
                    point: CGPoint) -> UIContextMenuConfiguration? {
-        let selectedCategory = categories[indexPath.row]
         return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { [weak self] _ in
             guard let self = self else { return UIMenu() }
-            
             let deleteAction = UIAction(
                 title: "Удалить",
                 image: UIImage(systemName: "trash"),
                 attributes: .destructive
             ) { _ in
-                self.deleteCategory(selectedCategory, at: indexPath)
+                self.deleteCategory(at: indexPath)
             }
-            
             return UIMenu(title: "", children: [deleteAction])
         }
     }
@@ -245,12 +258,6 @@ extension CategorySelectionViewController: UITableViewDataSource, UITableViewDel
 // MARK: - CategoryCreationDelegate
 extension CategorySelectionViewController: CategoryCreationDelegate {
     func didCreateCategory(_ newCategory: TrackerCategory) {
-        do {
-            try categoryStore.addCategory(newCategory)
-            try categoryStore.performFetch()
-            categories = categoryStore.categories
-        } catch {
-            print("Error adding category: \(error)")
-        }
+        viewModel.addCategory(newCategory)
     }
 }
