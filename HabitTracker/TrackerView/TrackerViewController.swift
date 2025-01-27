@@ -76,10 +76,11 @@ final class TrackerViewController: UIViewController {
     // MARK: - Lifecycle
     
     override func viewDidLoad() {
-        super.viewDidLoad()
-        setupUI()
-        setupNavigationBar()
-    }
+            super.viewDidLoad()
+            setupUI()
+            setupNavigationBar()
+            searchBar.delegate = self
+        }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
@@ -149,9 +150,15 @@ extension TrackerViewController: TrackerViewProtocol {
     }
     
     func updatePlaceholderVisibility(isHidden: Bool) {
-        collectionView.isHidden = !isHidden
-        placeholderStackView.isHidden = isHidden
-    }
+            collectionView.isHidden = !isHidden
+            placeholderStackView.isHidden = isHidden
+
+            if !isHidden && !searchBar.text!.isEmpty {
+                (placeholderStackView.arrangedSubviews[1] as? UILabel)?.text = "Ничего не найдено"
+            } else {
+                (placeholderStackView.arrangedSubviews[1] as? UILabel)?.text = "Что будем отслеживать?"
+            }
+        }
     
     func reloadItems(at indexPaths: [IndexPath]) {
         collectionView.reloadItems(at: indexPaths)
@@ -196,5 +203,15 @@ extension TrackerViewController: UICollectionViewDelegate {
             }
             return UIMenu(title: "", children: [deleteAction])
         }
+    }
+}
+
+extension TrackerViewController: UISearchBarDelegate {
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        presenter.filter(with: searchText)
+    }
+    
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        searchBar.resignFirstResponder()
     }
 }

@@ -11,6 +11,9 @@ final class TrackerPresenter: NSObject {
     private let trackerStore: TrackerStore
     private let recordStore: TrackerRecordStore
     private var currentDate = Date()
+    private var searchText = ""
+    
+    private var visibleCategories: [(category: TrackerCategoryCoreData, trackers: [TrackerCoreData])] = []
     
     var dailySections: [(category: TrackerCategoryCoreData, trackers: [TrackerCoreData])] {
         let all = trackerStore.trackers
@@ -37,6 +40,7 @@ final class TrackerPresenter: NSObject {
         super.init()
         trackerStore.delegate = self
         recordStore.delegate = self
+        applySearchFilter()
         
         NotificationCenter.default.addObserver(
             self,
@@ -46,14 +50,33 @@ final class TrackerPresenter: NSObject {
         )
     }
     
+    func filter(with searchText: String) {
+        self.searchText = searchText.lowercased()
+        applySearchFilter()
+        view?.reloadCollectionView()
+        updatePlaceholderVisibility()
+    }
+    
+    private func applySearchFilter() {
+        let sections = dailySections
+        visibleCategories = sections.compactMap { section in
+            let filteredTrackers = section.trackers.filter { tracker in
+                guard let name = tracker.name else { return false }
+                return searchText.isEmpty || name.lowercased().contains(searchText)
+            }
+            return filteredTrackers.isEmpty ? nil : (section.category, filteredTrackers)
+        }
+    }
+    
     func datePickerValueChanged(date: Date) {
         currentDate = date
+        applySearchFilter()
         view?.reloadCollectionView()
         updatePlaceholderVisibility()
     }
     
     func updatePlaceholderVisibility() {
-        let hasTrackers = !dailySections.isEmpty
+        let hasTrackers = !visibleCategories.isEmpty
         view?.updatePlaceholderVisibility(isHidden: hasTrackers)
     }
     
@@ -130,16 +153,17 @@ extension TrackerPresenter: TrackerStoreDelegate, TrackerRecordStoreDelegate {
 // MARK: - UICollectionView DataSource
 extension TrackerPresenter: UICollectionViewDataSource {
     func numberOfSections(in collectionView: UICollectionView) -> Int {
-        dailySections.count
+        visibleCategories.count
     }
     
     func collectionView(_ collectionView: UICollectionView,
                         numberOfItemsInSection section: Int) -> Int {
-        dailySections[section].trackers.count
+        visibleCategories[section].trackers.count
     }
     
     func collectionView(_ collectionView: UICollectionView,
                         cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        let (_, trackers) = visibleCategories[indexPath.section]
         guard let cell = collectionView.dequeueReusableCell(
             withReuseIdentifier: TrackerCell.identifier,
             for: indexPath
@@ -147,7 +171,6 @@ extension TrackerPresenter: UICollectionViewDataSource {
             return UICollectionViewCell()
         }
         
-        let (_, trackers) = dailySections[indexPath.section]
         let tracker = trackers[indexPath.item]
         let day = currentDate.startOfDay()
         let isCompleted = (recordFor(tracker, on: day) != nil)
@@ -193,7 +216,7 @@ extension TrackerPresenter {
             return UICollectionReusableView()
         }
         
-        let (category, _) = dailySections[indexPath.section]
+        let (category, _) = visibleCategories[indexPath.section]
         header.titleLabel.text = category.title
         return header
     }
