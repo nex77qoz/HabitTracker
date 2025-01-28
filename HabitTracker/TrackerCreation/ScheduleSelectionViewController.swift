@@ -14,7 +14,7 @@ final class ScheduleSelectionViewController: UIViewController, UITableViewDelega
     private let tableView = UITableView(frame: .zero, style: .plain)
     private lazy var doneButton = UIButton.roundedButton(
         title: "Готово",
-        backgroundColor: .black,
+        backgroundColor: .background,
         titleColor: .white,
         selector: #selector(doneButtonTapped),
         target: self
@@ -31,11 +31,12 @@ final class ScheduleSelectionViewController: UIViewController, UITableViewDelega
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        view.backgroundColor = .white
+        view.backgroundColor = .background
         
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "DayCell")
         tableView.delegate = self
         tableView.dataSource = self
+        tableView.backgroundColor = .background
         
         view.addSubview(titleLabel)
         view.addSubview(tableView)
@@ -88,6 +89,7 @@ final class ScheduleSelectionViewController: UIViewController, UITableViewDelega
         switchView.tag = indexPath.row
         switchView.addTarget(self, action: #selector(switchChanged(_:)), for: .valueChanged)
         cell.accessoryView = switchView
+        cell.backgroundColor = .background
         
         cell.selectionStyle = .none
         return cell

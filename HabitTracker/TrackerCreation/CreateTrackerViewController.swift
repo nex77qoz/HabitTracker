@@ -13,14 +13,14 @@ final class CreateTrackerViewController: UIViewController {
     }()
     private lazy var habitButton = UIButton.roundedButton(
         title: "Привычка",
-        backgroundColor: .black,
-        titleColor: .white,
+        backgroundColor: .buttonBackground,
+        titleColor: UIColor(named: "ButtonText") ?? .black,
         selector: #selector(habitButtonTapped), target: self
     )
     private lazy var irregularEventButton = UIButton.roundedButton(
         title: "Нерегулярное событие",
-        backgroundColor: .black,
-        titleColor: .white,
+        backgroundColor: .buttonBackground,
+        titleColor: UIColor(named: "ButtonText") ?? .black,
         selector: #selector(irregularEventButtonTapped), target: self
     )
     
@@ -35,7 +35,7 @@ final class CreateTrackerViewController: UIViewController {
     // MARK: - Настройка интерфейса
     
     private func setupView() {
-        view.backgroundColor = .white
+        view.backgroundColor = .background
         view.addSubview(titleLabel)
         view.addSubview(habitButton)
         view.addSubview(irregularEventButton)

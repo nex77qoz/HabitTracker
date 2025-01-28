@@ -1,7 +1,7 @@
 import UIKit
 
 final class TrackerViewController: UIViewController {
-    
+
     // MARK: - UI-компоненты
     
     private lazy var datePicker: UIDatePicker = {
@@ -34,7 +34,7 @@ final class TrackerViewController: UIViewController {
         layout.sectionInset = UIEdgeInsets(top: 16, left: 16, bottom: 16, right: 16)
         
         let collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
-        collectionView.backgroundColor = .white
+        collectionView.backgroundColor = .background
         collectionView.dataSource = presenter
         collectionView.delegate = self
         collectionView.register(TrackerCell.self, forCellWithReuseIdentifier: TrackerCell.identifier)
@@ -53,20 +53,31 @@ final class TrackerViewController: UIViewController {
         stackView.spacing = 8
         stackView.isHidden = true
         
-        let starImageView = UIImageView(image: UIImage(named: "star"))
-        starImageView.contentMode = .scaleAspectFit
-        starImageView.widthAnchor.constraint(equalToConstant: 80).isActive = true
-        starImageView.heightAnchor.constraint(equalToConstant: 80).isActive = true
+        let imageView = UIImageView(image: UIImage(named: "star"))
+        imageView.contentMode = .scaleAspectFit
+        imageView.widthAnchor.constraint(equalToConstant: 80).isActive = true
+        imageView.heightAnchor.constraint(equalToConstant: 80).isActive = true
         
         let placeholderLabel = UILabel()
         placeholderLabel.text = "Что будем отслеживать?"
         placeholderLabel.textAlignment = .center
         placeholderLabel.font = .systemFont(ofSize: 12, weight: .medium)
         
-        stackView.addArrangedSubview(starImageView)
+        stackView.addArrangedSubview(imageView)
         stackView.addArrangedSubview(placeholderLabel)
         
         return stackView
+    }()
+    
+    private lazy var filterButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.setTitle("Фильтры", for: .normal)
+        button.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .bold)
+        button.backgroundColor = .systemBlue
+        button.setTitleColor(.white, for: .normal)
+        button.layer.cornerRadius = 16
+        button.addTarget(self, action: #selector(filterButtonTapped), for: .touchUpInside)
+        return button
     }()
     
     // MARK: - Presenter
@@ -76,32 +87,36 @@ final class TrackerViewController: UIViewController {
     // MARK: - Lifecycle
     
     override func viewDidLoad() {
-            super.viewDidLoad()
-            setupUI()
-            setupNavigationBar()
-            searchBar.delegate = self
-        }
+        super.viewDidLoad()
+        setupUI()
+        setupNavigationBar()
+        searchBar.delegate = self
+        
+        collectionView.contentInset.bottom = 100
+    }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         presenter.updatePlaceholderVisibility()
+        updateFilterButtonVisibility()
     }
     
     // MARK: - Настройка интерфейса
     
     private func setupUI() {
-        view.backgroundColor = .white
+        view.backgroundColor = .background
         
         view.addSubview(titleLabel)
         view.addSubview(searchBar)
         view.addSubview(collectionView)
         view.addSubview(placeholderStackView)
+        view.addSubview(filterButton)
         
         setupConstraints()
     }
     
     private func setupConstraints() {
-        [titleLabel, searchBar, collectionView, placeholderStackView].forEach {
+        [titleLabel, searchBar, collectionView, placeholderStackView, filterButton].forEach {
             $0.translatesAutoresizingMaskIntoConstraints = false
         }
         
@@ -119,17 +134,31 @@ final class TrackerViewController: UIViewController {
             collectionView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
             
             placeholderStackView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            placeholderStackView.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -20)
+            placeholderStackView.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -20),
+            
+            filterButton.heightAnchor.constraint(equalToConstant: 60),
+            filterButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            filterButton.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 0.4),
+            filterButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -8),
         ])
     }
     
     private func setupNavigationBar() {
-        let plusImage = UIImage(named: "plus")?.withRenderingMode(.alwaysOriginal)
-        navigationItem.leftBarButtonItem = UIBarButtonItem(image: plusImage, style: .plain, target: self, action: #selector(showAddTracker))
+        let plusButton = UIBarButtonItem(title: "+",
+                                         style: .plain,
+                                         target: self,
+                                         action: #selector(showAddTracker))
+        
+        plusButton.tintColor = UIColor(named: "TextColor")
+        let attributes = [NSAttributedString.Key.font: UIFont.systemFont(ofSize: 24)]
+        plusButton.setTitleTextAttributes(attributes, for: .normal)
+        
+        navigationItem.leftBarButtonItem = plusButton
+        
         navigationItem.rightBarButtonItem = UIBarButtonItem(customView: datePicker)
     }
     
-    // MARK: - Обработчики действий
+    // MARK: - Действия
     
     @objc private func showAddTracker() {
         let createTrackerVC = CreateTrackerViewController()
@@ -139,6 +168,23 @@ final class TrackerViewController: UIViewController {
     
     @objc private func datePickerValueChanged(_ sender: UIDatePicker) {
         presenter.datePickerValueChanged(date: sender.date)
+    }
+    
+    @objc private func filterButtonTapped() {
+        let filtersVC = FiltersViewController(selectedFilter: presenter.currentFilter) { [weak self] newFilter in
+            self?.presenter.setFilter(newFilter)
+        }
+        filtersVC.modalPresentationStyle = .pageSheet
+        present(filtersVC, animated: true)
+    }
+    
+    // MARK: - Дополнительные методы
+    
+    func updateFilterButtonVisibility() {
+        let hasTrackers = presenter.hasAnyTrackersForSelectedDay()
+        let filterIsAll = (presenter.currentFilter == .all)
+
+        filterButton.isHidden = (!hasTrackers && filterIsAll)
     }
 }
 
@@ -150,15 +196,16 @@ extension TrackerViewController: TrackerViewProtocol {
     }
     
     func updatePlaceholderVisibility(isHidden: Bool) {
-            collectionView.isHidden = !isHidden
-            placeholderStackView.isHidden = isHidden
-
-            if !isHidden && !searchBar.text!.isEmpty {
-                (placeholderStackView.arrangedSubviews[1] as? UILabel)?.text = "Ничего не найдено"
-            } else {
-                (placeholderStackView.arrangedSubviews[1] as? UILabel)?.text = "Что будем отслеживать?"
-            }
+        collectionView.isHidden = !isHidden
+        placeholderStackView.isHidden = isHidden
+        
+        if !isHidden && !searchBar.text!.isEmpty {
+            (placeholderStackView.arrangedSubviews[1] as? UILabel)?.text = "Ничего не найдено"
+        } else {
+            (placeholderStackView.arrangedSubviews[1] as? UILabel)?.text = "Что будем отслеживать?"
         }
+        updateFilterButtonVisibility()
+    }
     
     func reloadItems(at indexPaths: [IndexPath]) {
         collectionView.reloadItems(at: indexPaths)
@@ -191,10 +238,14 @@ extension TrackerViewController: UICollectionViewDelegate {
         let tracker = presenter.dailySections[indexPath.section].trackers[indexPath.item]
         
         return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { [weak self] _ in
-            let deleteAction = UIAction(title: "Удалить", image: UIImage(systemName: "trash"), attributes: .destructive) { _ in
-                let alert = UIAlertController(title: "Удалить трекер",
-                                              message: "Вы уверены, что хотите удалить этот трекер?",
-                                              preferredStyle: .alert)
+            let deleteAction = UIAction(title: "Удалить",
+                                        image: UIImage(systemName: "trash"),
+                                        attributes: .destructive) { _ in
+                let alert = UIAlertController(
+                    title: "Удалить трекер",
+                    message: "Вы уверены, что хотите удалить этот трекер?",
+                    preferredStyle: .alert
+                )
                 alert.addAction(UIAlertAction(title: "Отмена", style: .cancel, handler: nil))
                 alert.addAction(UIAlertAction(title: "Удалить", style: .destructive, handler: { _ in
                     self?.presenter.deleteTracker(tracker)

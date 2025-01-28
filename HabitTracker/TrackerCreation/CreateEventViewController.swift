@@ -39,11 +39,17 @@ final class CreateEventViewController: UIViewController {
     
     private let nameTextField: UITextField = {
         let textField = UITextField()
-        textField.placeholder = "Введите название трекера"
-        textField.backgroundColor = .backgroundDay
+        textField.backgroundColor = .grayBackground
         textField.layer.cornerRadius = 16
         textField.leftView = UIView(frame: CGRect(x: 0, y: 0, width: 16, height: 0))
         textField.leftViewMode = .always
+        
+        let placeholderText = "Введите название трекера"
+        let attributes: [NSAttributedString.Key: Any] = [
+            .foregroundColor: UIColor(named: "TextColor")
+        ]
+        textField.attributedPlaceholder = NSAttributedString(string: placeholderText, attributes: attributes)
+        
         return textField
     }()
     
@@ -76,7 +82,7 @@ final class CreateEventViewController: UIViewController {
         layout.minimumLineSpacing = 8
         let collection = UICollectionView(frame: .zero, collectionViewLayout: layout)
         collection.register(EmojiCell.self, forCellWithReuseIdentifier: EmojiCell.identifier)
-        collection.backgroundColor = .white
+        collection.backgroundColor = .background
         return collection
     }()
     
@@ -99,7 +105,7 @@ final class CreateEventViewController: UIViewController {
         layout.minimumLineSpacing = 0
         let collection = UICollectionView(frame: .zero, collectionViewLayout: layout)
         collection.register(ColorCell.self, forCellWithReuseIdentifier: ColorCell.identifier)
-        collection.backgroundColor = .white
+        collection.backgroundColor = .background
         return collection
     }()
     
@@ -110,7 +116,7 @@ final class CreateEventViewController: UIViewController {
     private lazy var cancelButton: UIButton = {
         let button = UIButton.roundedButton(
             title: "Отмена",
-            backgroundColor: .backgroundDay,
+            backgroundColor: .background,
             titleColor: .systemRed,
             selector: #selector(cancelButtonTapped),
             target: self
@@ -148,7 +154,7 @@ final class CreateEventViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = .white
+        view.backgroundColor = .background
         
         titleLabel.text = isScheduled ? "Новая привычка" : "Новое нерегулярное событие"
         
@@ -207,7 +213,7 @@ final class CreateEventViewController: UIViewController {
             nameTextField.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 16),
             nameTextField.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             nameTextField.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-            nameTextField.heightAnchor.constraint(equalToConstant: 44),
+            nameTextField.heightAnchor.constraint(equalToConstant: 75),
             
             settingsTableView.topAnchor.constraint(equalTo: nameTextField.bottomAnchor, constant: 16),
             settingsTableView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
@@ -328,7 +334,7 @@ final class CreateEventViewController: UIViewController {
             createButton.isEnabled = hasName && hasCategory && hasEmoji && hasColor
         }
         
-        createButton.backgroundColor = createButton.isEnabled ? .black : .gray
+        createButton.backgroundColor = createButton.isEnabled ? .background : .gray
     }
 }
 
@@ -349,7 +355,7 @@ extension CreateEventViewController: UITableViewDataSource, UITableViewDelegate 
         let cell = tableView.dequeueReusableCell(withIdentifier: "SettingsCell", for: indexPath)
         cell.selectionStyle = .none
         cell.accessoryType = .disclosureIndicator
-        cell.backgroundColor = .backgroundDay
+        cell.backgroundColor = .grayBackground
         
         let option = settingsOptions[indexPath.row]
         
@@ -358,7 +364,7 @@ extension CreateEventViewController: UITableViewDataSource, UITableViewDelegate 
             if let category = selectedCategory {
                 let a = NSMutableAttributedString(
                     string: "Категория:",
-                    attributes: [.foregroundColor: UIColor.black]
+                    attributes: [.foregroundColor: UIColor(named: "TextColor")]
                 )
                 a.append(
                     NSAttributedString(
@@ -370,7 +376,7 @@ extension CreateEventViewController: UITableViewDataSource, UITableViewDelegate 
             } else {
                 cell.textLabel?.attributedText = NSAttributedString(
                     string: "Выбрать категорию",
-                    attributes: [.foregroundColor: UIColor.black]
+                    attributes: [.foregroundColor: UIColor(named: "TextColor")]
                 )
             }
             
@@ -378,7 +384,7 @@ extension CreateEventViewController: UITableViewDataSource, UITableViewDelegate 
             if selectedWeekdays.isEmpty {
                 cell.textLabel?.attributedText = NSAttributedString(
                     string: "Расписание",
-                    attributes: [.foregroundColor: UIColor.black]
+                    attributes: [.foregroundColor: UIColor(named: "TextColor")]
                 )
             } else {
                 let sortedDays = weekdays.filter { selectedWeekdays.contains($0) }
@@ -386,7 +392,7 @@ extension CreateEventViewController: UITableViewDataSource, UITableViewDelegate 
                 
                 let a = NSMutableAttributedString(
                     string: "Расписание:",
-                    attributes: [.foregroundColor: UIColor.black]
+                    attributes: [.foregroundColor: UIColor(named: "TextColor")]
                 )
                 a.append(
                     NSAttributedString(

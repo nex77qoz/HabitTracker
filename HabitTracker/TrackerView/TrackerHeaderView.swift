@@ -7,7 +7,7 @@ final class TrackerHeaderView: UICollectionReusableView {
     let titleLabel: UILabel = {
         let label = UILabel()
         label.font = .systemFont(ofSize: 19, weight: .bold)
-        label.textColor = .black
+        label.textColor = UIColor(named: "TextColor")
         return label
     }()
     

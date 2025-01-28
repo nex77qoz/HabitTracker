@@ -14,12 +14,17 @@ final class CategoryCreationVC: UIViewController {
     
     private let nameTextField: UITextField = {
         let textField = UITextField()
-        textField.placeholder = "Введите название категории"
-        textField.backgroundColor = .backgroundDay
+        textField.backgroundColor = .grayBackground
         textField.layer.cornerRadius = 16
         textField.leftView = UIView(frame: CGRect(x: 0, y: 0, width: 16, height: 0))
         textField.leftViewMode = .always
-        textField.translatesAutoresizingMaskIntoConstraints = false
+        
+        let placeholderText = "Введите название категории"
+        let attributes: [NSAttributedString.Key: Any] = [
+            .foregroundColor: UIColor(named: "TextColor") ?? .gray,
+        ]
+        textField.attributedPlaceholder = NSAttributedString(string: placeholderText, attributes: attributes)
+        
         return textField
     }()
     
@@ -48,7 +53,7 @@ final class CategoryCreationVC: UIViewController {
     }
     
     private func setupView() {
-        view.backgroundColor = .white
+        view.backgroundColor = .background
         
         view.addSubview(titleLabel)
         view.addSubview(nameTextField)
@@ -87,7 +92,7 @@ final class CategoryCreationVC: UIViewController {
     
     @objc private func textFieldDidChange() {
         createButton.isEnabled = !(nameTextField.text?.isEmpty ?? true)
-        createButton.backgroundColor = createButton.isEnabled ? .black : .gray
+        createButton.backgroundColor = createButton.isEnabled ? .white : .gray
     }
 }
 

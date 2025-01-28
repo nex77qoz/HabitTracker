@@ -50,7 +50,7 @@ final class TrackerCell: UICollectionViewCell {
     private let daysLabel: UILabel = {
         let label = UILabel()
         label.font = UIFont.systemFont(ofSize: 14, weight: .medium)
-        label.textColor = .black
+        label.textColor = UIColor(named: "TextColor")
         return label
     }()
     

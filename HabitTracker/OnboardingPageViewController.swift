@@ -36,7 +36,7 @@ final class OnboardingPageViewController: UIViewController {
         let label = UILabel()
         label.translatesAutoresizingMaskIntoConstraints = false
         label.text = displayText
-        label.textColor = .black
+        label.textColor = UIColor(named: "TextColor")
         label.font = UIFont.systemFont(ofSize: 32, weight: .bold)
         label.numberOfLines = 0
         label.textAlignment = .center

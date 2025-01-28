@@ -40,7 +40,7 @@ final class OnboardingViewController: UIPageViewController, UIPageViewController
     
     private lazy var okButton = UIButton.roundedButton(
         title: "Вот это технологии!",
-        backgroundColor: .black,
+        backgroundColor: .background,
         titleColor: .white,
         selector: #selector(okButtonTapped), target: self
     )

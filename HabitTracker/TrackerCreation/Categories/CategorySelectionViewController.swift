@@ -62,7 +62,7 @@ final class CategorySelectionViewController: UIViewController {
         let label = UILabel()
         label.text = "Привычки и события можно \nобъединить по смыслу"
         label.font = UIFont.systemFont(ofSize: 12, weight: .regular)
-        label.textColor = .black
+        label.textColor = UIColor(named: "TextColor")
         label.textAlignment = .center
         label.numberOfLines = 2
         label.translatesAutoresizingMaskIntoConstraints = false
@@ -97,7 +97,7 @@ final class CategorySelectionViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = .white
+        view.backgroundColor = .background
         title = "Категория"
         
         setupLayout()
@@ -196,7 +196,7 @@ extension CategorySelectionViewController: UITableViewDataSource, UITableViewDel
         let category = categories[indexPath.row]
         
         cell.textLabel?.text = category.title
-        cell.backgroundColor = .backgroundDay
+        cell.backgroundColor = .grayBackground
         
         let isLastRow = (indexPath.row == categories.count - 1)
         cell.setSeparatorHidden(isLastRow)
