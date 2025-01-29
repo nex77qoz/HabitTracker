@@ -101,6 +101,20 @@ final class TrackerViewController: UIViewController {
         updateFilterButtonVisibility()
     }
     
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        
+        logAndReportEvent(event: "open",
+                          screen: "Main")
+    }
+
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        
+        logAndReportEvent(event: "close",
+                          screen: "Main")
+    }
+    
     // MARK: - Настройка интерфейса
     
     private func setupUI() {
@@ -164,6 +178,10 @@ final class TrackerViewController: UIViewController {
         let createTrackerVC = CreateTrackerViewController()
         createTrackerVC.modalPresentationStyle = .pageSheet
         present(createTrackerVC, animated: true, completion: nil)
+        
+        logAndReportEvent(event: "click",
+                              screen: "Main",
+                              item: "add_track")
     }
     
     @objc private func datePickerValueChanged(_ sender: UIDatePicker) {
@@ -176,6 +194,10 @@ final class TrackerViewController: UIViewController {
         }
         filtersVC.modalPresentationStyle = .pageSheet
         present(filtersVC, animated: true)
+        
+        logAndReportEvent(event: "click",
+                              screen: "Main",
+                              item: "filter")
     }
     
     // MARK: - Дополнительные методы
@@ -251,6 +273,10 @@ extension TrackerViewController: UICollectionViewDelegate {
                 alert.addAction(UIAlertAction(title: NSLocalizedString("cancel", comment: ""), style: .cancel, handler: nil))
                 alert.addAction(UIAlertAction(title: NSLocalizedString("delete", comment: ""), style: .destructive, handler: { _ in
                     self?.presenter.deleteTracker(tracker)
+                    
+                    logAndReportEvent(event: "click",
+                                                    screen: "Main",
+                                                    item: "delete")
                 }))
                 self?.present(alert, animated: true, completion: nil)
             }
@@ -265,6 +291,10 @@ extension TrackerViewController: UICollectionViewDelegate {
                 let editVC = EditTrackerViewController(tracker: tracker)
                 editVC.modalPresentationStyle = .pageSheet
                 self.present(editVC, animated: true)
+                
+                logAndReportEvent(event: "click",
+                                           screen: "Main",
+                                           item: "edit")
             }
             
             let pinTitle = tracker.isPinned

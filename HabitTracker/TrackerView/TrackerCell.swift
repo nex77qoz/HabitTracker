@@ -83,6 +83,10 @@ final class TrackerCell: UICollectionViewCell {
     @objc private func completeButtonTapped() {
         guard let indexPath = indexPath, let tracker = tracker else { return }
         delegate?.trackerCell(self, didToggleCompletionFor: tracker, at: indexPath)
+        
+        logAndReportEvent(event: "click",
+                              screen: "Main",
+                              item: "track")
     }
     
     required init?(coder: NSCoder) {
