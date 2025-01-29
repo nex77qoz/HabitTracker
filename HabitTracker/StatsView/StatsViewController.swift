@@ -84,10 +84,7 @@ final class StatsViewController: UIViewController, TrackerStoreDelegate, Tracker
     }
     
     private func makeCardView(label: UILabel, subtitle: String) -> UIView {
-        let cardView = UIView()
-        cardView.layer.cornerRadius = 8
-        cardView.layer.borderWidth = 2
-        cardView.layer.borderColor = UIColor.systemBlue.cgColor
+        let cardView = GradientBorderCardView()
         
         let vStack = UIStackView()
         vStack.axis = .vertical
@@ -96,7 +93,6 @@ final class StatsViewController: UIViewController, TrackerStoreDelegate, Tracker
         
         let subtitleLabel = UILabel()
         subtitleLabel.font = .systemFont(ofSize: 14)
-        subtitleLabel.textColor = .black
         subtitleLabel.text = subtitle
         
         vStack.addArrangedSubview(label)
@@ -146,12 +142,40 @@ final class StatsViewController: UIViewController, TrackerStoreDelegate, Tracker
     // MARK: - Вспомогательные методы вычисления
     
     private func calculateBestPeriod(records: [TrackerRecordCoreData]) -> Int {
-        let grouped = Dictionary(grouping: records) { record -> Date in
-            let day = Calendar.current.startOfDay(for: record.date ?? Date())
-            return day
+        let groupedByTrackerID = Dictionary(grouping: records) { $0.trackerId }
+
+        var globalMaxStreak = 0
+
+        for (_, trackerRecords) in groupedByTrackerID {
+            let sortedDates = trackerRecords
+                .compactMap { $0.date }
+                .sorted()
+
+            guard !sortedDates.isEmpty else { continue }
+
+            var currentStreak = 1
+            var maxStreakForTracker = 1
+
+            for i in 1..<sortedDates.count {
+                let prevDate = sortedDates[i - 1]
+                let currentDate = sortedDates[i]
+
+                let diff = Calendar.current.dateComponents([.day], from: prevDate, to: currentDate).day ?? 0
+
+                if diff == 1 {
+                    currentStreak += 1
+                } else {
+                    maxStreakForTracker = max(maxStreakForTracker, currentStreak)
+                    currentStreak = 1
+                }
+            }
+
+            maxStreakForTracker = max(maxStreakForTracker, currentStreak)
+
+            globalMaxStreak = max(globalMaxStreak, maxStreakForTracker)
         }
-        let maxCount = grouped.values.map { $0.count }.max() ?? 0
-        return maxCount
+
+        return globalMaxStreak
     }
     
     private func calculateIdealDays(records: [TrackerRecordCoreData],
@@ -237,7 +261,6 @@ final class StatsViewController: UIViewController, TrackerStoreDelegate, Tracker
     static func makeStatLabel() -> UILabel {
         let lbl = UILabel()
         lbl.font = .systemFont(ofSize: 28, weight: .bold)
-        lbl.textColor = .black
         lbl.textAlignment = .left
         lbl.text = "0"
         return lbl

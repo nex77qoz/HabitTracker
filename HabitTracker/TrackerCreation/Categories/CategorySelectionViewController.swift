@@ -44,8 +44,8 @@ final class CategorySelectionViewController: UIViewController {
     
     private lazy var addCategoryButton = UIButton.roundedButton(
         title: "Добавить категорию",
-        backgroundColor: .black,
-        titleColor: .white,
+        backgroundColor: .buttonBackground,
+        titleColor: .buttonText,
         selector: #selector(addCategoryTapped),
         target: self
     )

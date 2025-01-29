@@ -11,11 +11,11 @@ final class ScheduleSelectionViewController: UIViewController, UITableViewDelega
         return label
     }()
     
-    private let tableView = UITableView(frame: .zero, style: .plain)
+    private let tableView = UITableView(frame: .zero, style: .insetGrouped)
     private lazy var doneButton = UIButton.roundedButton(
         title: "Готово",
-        backgroundColor: .background,
-        titleColor: .white,
+        backgroundColor: .buttonBackground,
+        titleColor: .buttonText,
         selector: #selector(doneButtonTapped),
         target: self
     )
@@ -51,8 +51,8 @@ final class ScheduleSelectionViewController: UIViewController, UITableViewDelega
             titleLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             
             tableView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 20),
-            tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
-            tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             tableView.bottomAnchor.constraint(equalTo: doneButton.topAnchor, constant: -16),
             
             doneButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
@@ -89,7 +89,7 @@ final class ScheduleSelectionViewController: UIViewController, UITableViewDelega
         switchView.tag = indexPath.row
         switchView.addTarget(self, action: #selector(switchChanged(_:)), for: .valueChanged)
         cell.accessoryView = switchView
-        cell.backgroundColor = .background
+        cell.backgroundColor = .grayBackground
         
         cell.selectionStyle = .none
         return cell

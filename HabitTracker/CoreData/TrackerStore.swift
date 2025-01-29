@@ -68,6 +68,11 @@ final class TrackerStore: NSObject {
         context.delete(tracker)
         try CoreDataManager.shared.saveContext()
     }
+    
+    func togglePinned(for tracker: TrackerCoreData) throws {
+        tracker.isPinned.toggle()
+        try CoreDataManager.shared.saveContext()
+    }
 }
 
 extension TrackerStore: NSFetchedResultsControllerDelegate {

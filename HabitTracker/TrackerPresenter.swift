@@ -19,6 +19,8 @@ final class TrackerPresenter: NSObject {
     private let trackerStore: TrackerStore
     private let recordStore: TrackerRecordStore
     
+    private let pinnedCategoryTitle = "Закрепленные"
+    
     private var currentDate = Date()
     private var searchText = ""
     private(set) var currentFilter: TrackerFilter = .all
@@ -131,18 +133,41 @@ final class TrackerPresenter: NSObject {
             return searchText.isEmpty || name.lowercased().contains(searchText)
         }
         
-        let groups = Dictionary(grouping: searched, by: { $0.category }).compactMap { pair -> (TrackerCategoryCoreData, [TrackerCoreData])? in
+        let pinnedTrackers = searched.filter { $0.isPinned }
+        let unpinnedTrackers = searched.filter { !$0.isPinned }
+        
+        var categories: [(TrackerCategoryCoreData, [TrackerCoreData])] = []
+        
+        if !pinnedTrackers.isEmpty {
+            let pinnedCategory = TrackerCategoryCoreData(context: CoreDataManager.shared.context)
+            pinnedCategory.title = pinnedCategoryTitle
+            categories.append((pinnedCategory, pinnedTrackers))
+        }
+        
+        let unpinnedGroups = Dictionary(grouping: unpinnedTrackers, by: { $0.category }).compactMap { pair -> (TrackerCategoryCoreData, [TrackerCoreData])? in
             guard let category = pair.key else { return nil }
             return (category, pair.value)
         }
         
-        let sortedGroups = groups.map { (cat, trackers) -> (TrackerCategoryCoreData, [TrackerCoreData]) in
+        let sortedGroups = unpinnedGroups.map { (cat, trackers) -> (TrackerCategoryCoreData, [TrackerCoreData]) in
             let sortedTrackers = trackers.sorted { ($0.name ?? "") < ($1.name ?? "") }
             return (cat, sortedTrackers)
         }
         .sorted { ($0.0.title ?? "") < ($1.0.title ?? "") }
         
-        visibleCategories = sortedGroups
+        categories.append(contentsOf: sortedGroups)
+        
+        visibleCategories = categories
+    }
+    
+    func togglePinned(for tracker: TrackerCoreData) {
+        do {
+            try trackerStore.togglePinned(for: tracker)
+            applySearchFilter()
+            view?.reloadCollectionView()
+        } catch {
+            print("Error toggling pin status: \(error)")
+        }
     }
     
     private func isTrackerValidForSelectedDay(_ tracker: TrackerCoreData) -> Bool {

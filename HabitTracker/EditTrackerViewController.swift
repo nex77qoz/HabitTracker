@@ -60,7 +60,7 @@ final class EditTrackerViewController: UIViewController {
     private let nameTextField: UITextField = {
         let textField = UITextField()
         textField.placeholder = "Введите название трекера"
-        textField.backgroundColor = .systemGray6
+        textField.backgroundColor = .grayBackground
         textField.layer.cornerRadius = 16
         textField.leftView = UIView(frame: CGRect(x: 0, y: 0, width: 16, height: 0))
         textField.leftViewMode = .always
@@ -93,7 +93,7 @@ final class EditTrackerViewController: UIViewController {
         layout.minimumLineSpacing = 0
         let collection = UICollectionView(frame: .zero, collectionViewLayout: layout)
         collection.register(EmojiCell.self, forCellWithReuseIdentifier: EmojiCell.identifier)
-        collection.backgroundColor = .white
+        collection.backgroundColor = .background
         collection.isScrollEnabled = false
         return collection
     }()
@@ -113,7 +113,7 @@ final class EditTrackerViewController: UIViewController {
         layout.minimumLineSpacing = 0
         let collection = UICollectionView(frame: .zero, collectionViewLayout: layout)
         collection.register(ColorCell.self, forCellWithReuseIdentifier: ColorCell.identifier)
-        collection.backgroundColor = .white
+        collection.backgroundColor = .background
         collection.isScrollEnabled = false
         return collection
     }()
@@ -383,7 +383,7 @@ extension EditTrackerViewController: UITableViewDataSource, UITableViewDelegate 
         let cell = tableView.dequeueReusableCell(withIdentifier: "SettingsCell", for: indexPath)
         cell.selectionStyle = .none
         cell.accessoryType = .disclosureIndicator
-        cell.backgroundColor = .systemGray6
+        cell.backgroundColor = .grayBackground
         
         if indexPath.row == 0 {
             if let category = selectedCategory {

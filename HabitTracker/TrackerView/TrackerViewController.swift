@@ -254,18 +254,27 @@ extension TrackerViewController: UICollectionViewDelegate {
             }
             
             let editAction = UIAction(
-                        title: "Редактировать",
-                        image: UIImage(systemName: "pencil")
-                    ) { [weak self] _ in
-                        guard let self = self else { return }
-                        let tracker = self.presenter.dailySections[indexPath.section].trackers[indexPath.item]
-                        
-                        let editVC = EditTrackerViewController(tracker: tracker)
-                        editVC.modalPresentationStyle = .pageSheet
-                        self.present(editVC, animated: true)
-                    }
+                title: "Редактировать",
+                image: UIImage(systemName: "pencil")
+            ) { [weak self] _ in
+                guard let self = self else { return }
+                let tracker = self.presenter.dailySections[indexPath.section].trackers[indexPath.item]
+                
+                let editVC = EditTrackerViewController(tracker: tracker)
+                editVC.modalPresentationStyle = .pageSheet
+                self.present(editVC, animated: true)
+            }
             
-            return UIMenu(title: "", children: [editAction, deleteAction])
+            let pinTitle = tracker.isPinned ? "Открепить" : "Закрепить"
+            let pinImage = tracker.isPinned ? "pin.slash" : "pin"
+            let pinAction = UIAction(
+                title: pinTitle,
+                image: UIImage(systemName: pinImage)
+            ) { [weak self] _ in
+                self?.presenter.togglePinned(for: tracker)
+            }
+            
+            return UIMenu(title: "", children: [pinAction, editAction, deleteAction])
         }
     }
 }
