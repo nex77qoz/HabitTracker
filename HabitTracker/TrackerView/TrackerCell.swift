@@ -162,7 +162,11 @@ final class TrackerCell: UICollectionViewCell {
         
         let title = completed ? "✓" : "+"
         completeButton.setTitle(title, for: .normal)
-        daysLabel.text = "\(daysCount) дней"
+        let daysText = String.localizedStringWithFormat(
+          NSLocalizedString("daysCount", tableName: "daysCount", comment: ""),
+          daysCount
+        )
+        daysLabel.text = daysText
         self.isFutureDate = isFutureDate
         
         if isFutureDate {

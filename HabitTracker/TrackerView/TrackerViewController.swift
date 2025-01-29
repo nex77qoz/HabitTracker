@@ -8,21 +8,21 @@ final class TrackerViewController: UIViewController {
         let picker = UIDatePicker()
         picker.datePickerMode = .date
         picker.preferredDatePickerStyle = .compact
-        picker.locale = Locale(identifier: "ru_RU")
+        picker.locale = .autoupdatingCurrent
         picker.addTarget(self, action: #selector(datePickerValueChanged), for: .valueChanged)
         return picker
     }()
     
     private let titleLabel: UILabel = {
         let label = UILabel()
-        label.text = "Трекеры"
+        label.text = NSLocalizedString("trackersTitle", comment: "Заголовок")
         label.font = .systemFont(ofSize: 34, weight: .bold)
         return label
     }()
     
     private let searchBar: UISearchBar = {
         let searchBar = UISearchBar()
-        searchBar.placeholder = "Поиск"
+        searchBar.placeholder = NSLocalizedString("searchPlaceholder", comment: "Плейсхолдер для поиска")
         searchBar.searchBarStyle = .minimal
         return searchBar
     }()
@@ -59,7 +59,7 @@ final class TrackerViewController: UIViewController {
         imageView.heightAnchor.constraint(equalToConstant: 80).isActive = true
         
         let placeholderLabel = UILabel()
-        placeholderLabel.text = "Что будем отслеживать?"
+        placeholderLabel.text = NSLocalizedString("placeholderWhatToTrack", comment: "Плейсхолдер что будем отслеживать?")
         placeholderLabel.textAlignment = .center
         placeholderLabel.font = .systemFont(ofSize: 12, weight: .medium)
         
@@ -71,7 +71,7 @@ final class TrackerViewController: UIViewController {
     
     private lazy var filterButton: UIButton = {
         let button = UIButton(type: .system)
-        button.setTitle("Фильтры", for: .normal)
+        button.setTitle(NSLocalizedString("filtersButton", comment: "Кнопка фильтров"), for: .normal)
         button.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .bold)
         button.backgroundColor = .systemBlue
         button.setTitleColor(.white, for: .normal)
@@ -199,11 +199,13 @@ extension TrackerViewController: TrackerViewProtocol {
         collectionView.isHidden = !isHidden
         placeholderStackView.isHidden = isHidden
         
-        if !isHidden && !searchBar.text!.isEmpty {
-            (placeholderStackView.arrangedSubviews[1] as? UILabel)?.text = "Ничего не найдено"
+        let placeholderLabel = placeholderStackView.arrangedSubviews[1] as? UILabel
+        if !isHidden && !(searchBar.text?.isEmpty ?? true) {
+            placeholderLabel?.text = NSLocalizedString("placeholderNothingFound", comment: "Если ничего не найдено")
         } else {
-            (placeholderStackView.arrangedSubviews[1] as? UILabel)?.text = "Что будем отслеживать?"
+            placeholderLabel?.text = NSLocalizedString("placeholderWhatToTrack", comment: "")
         }
+        
         updateFilterButtonVisibility()
     }
     
@@ -238,23 +240,23 @@ extension TrackerViewController: UICollectionViewDelegate {
         let tracker = presenter.dailySections[indexPath.section].trackers[indexPath.item]
         
         return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { [weak self] _ in
-            let deleteAction = UIAction(title: "Удалить",
+            let deleteAction = UIAction(title: NSLocalizedString("delete", comment: "Delete action"),
                                         image: UIImage(systemName: "trash"),
                                         attributes: .destructive) { _ in
                 let alert = UIAlertController(
-                    title: "Удалить трекер",
-                    message: "Вы уверены, что хотите удалить этот трекер?",
+                    title: NSLocalizedString("deleteTrackerTitle", comment: ""),
+                    message: NSLocalizedString("deleteTrackerMessage", comment: ""),
                     preferredStyle: .alert
                 )
-                alert.addAction(UIAlertAction(title: "Отмена", style: .cancel, handler: nil))
-                alert.addAction(UIAlertAction(title: "Удалить", style: .destructive, handler: { _ in
+                alert.addAction(UIAlertAction(title: NSLocalizedString("cancel", comment: ""), style: .cancel, handler: nil))
+                alert.addAction(UIAlertAction(title: NSLocalizedString("delete", comment: ""), style: .destructive, handler: { _ in
                     self?.presenter.deleteTracker(tracker)
                 }))
                 self?.present(alert, animated: true, completion: nil)
             }
             
             let editAction = UIAction(
-                title: "Редактировать",
+                title: NSLocalizedString("edit", comment: "Edit action"),
                 image: UIImage(systemName: "pencil")
             ) { [weak self] _ in
                 guard let self = self else { return }
@@ -265,7 +267,9 @@ extension TrackerViewController: UICollectionViewDelegate {
                 self.present(editVC, animated: true)
             }
             
-            let pinTitle = tracker.isPinned ? "Открепить" : "Закрепить"
+            let pinTitle = tracker.isPinned
+              ? NSLocalizedString("unpin", comment: "Unpin action")
+              : NSLocalizedString("pin", comment: "Pin action")
             let pinImage = tracker.isPinned ? "pin.slash" : "pin"
             let pinAction = UIAction(
                 title: pinTitle,

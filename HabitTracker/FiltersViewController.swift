@@ -42,13 +42,15 @@ final class FiltersViewController: UIViewController, UITableViewDataSource, UITa
         super.viewDidLoad()
         view.backgroundColor = .background
         tableView.backgroundColor = .background
-		        
+        
         view.addSubview(tableView)
         view.addSubview(titleLabel)
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         tableView.translatesAutoresizingMaskIntoConstraints = false
         tableView.dataSource = self
         tableView.delegate = self
+        
+        tableView.rowHeight = 75
         
         NSLayoutConstraint.activate([
             titleLabel.topAnchor.constraint(equalTo: view.topAnchor, constant: 10),

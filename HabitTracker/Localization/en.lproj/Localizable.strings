@@ -1,0 +1,29 @@
+/* Заголовок главного экрана */
+"trackersTitle" = "Trackers";
+
+/* Текст на кнопке фильтров */
+"filtersButton" = "Filters";
+
+/* Текст вкладки "Трекеры" */
+"tabTrackers" = "Trackers";
+
+/* Текст вкладки "Статистика" */
+"tabStatistics" = "Statistics";
+
+/* Плейсхолдер поиска */
+"searchPlaceholder" = "Search";
+
+/* Плейсхолдер "Что будем отслеживать?" */
+"placeholderWhatToTrack" = "What shall we track?";
+
+/* Плейсхолдер "Ничего не найдено" */
+"placeholderNothingFound" = "Nothing found";
+
+/* Для всплывающего меню */
+"delete" = "Delete";
+"edit" = "Edit";
+"pin" = "Pin";
+"unpin" = "Unpin";
+"cancel" = "Cancel";
+"deleteTrackerTitle" = "Delete tracker";
+"deleteTrackerMessage" = "Are you sure you want to delete this tracker?";

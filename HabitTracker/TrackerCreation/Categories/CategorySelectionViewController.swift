@@ -33,12 +33,11 @@ final class CategorySelectionViewController: UIViewController {
     }()
     
     private let tableView: UITableView = {
-        let table = UITableView()
+        let table = UITableView(frame: .zero, style: .insetGrouped)
         table.register(CustomTableViewCell.self, forCellReuseIdentifier: "CategoryCell")
-        table.layer.cornerRadius = 16
-        table.layer.masksToBounds = true
         table.translatesAutoresizingMaskIntoConstraints = false
         table.separatorStyle = .none
+        table.backgroundColor = .background
         return table
     }()
     
@@ -139,8 +138,8 @@ final class CategorySelectionViewController: UIViewController {
             titleLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             
             tableView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 24),
-            tableView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
-            tableView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
+            tableView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+            tableView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
             tableView.bottomAnchor.constraint(equalTo: addCategoryButton.topAnchor, constant: -16),
             
             addCategoryButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
@@ -213,30 +212,6 @@ extension CategorySelectionViewController: UITableViewDataSource, UITableViewDel
         75
     }
     
-    func tableView(_ tableView: UITableView,
-                   willDisplay cell: UITableViewCell,
-                   forRowAt indexPath: IndexPath) {
-        let corners: UIRectCorner
-        if indexPath.row == 0 && categories.count == 1 {
-            corners = [.topLeft, .topRight, .bottomLeft, .bottomRight]
-        } else if indexPath.row == 0 {
-            corners = [.topLeft, .topRight]
-        } else if indexPath.row == tableView.numberOfRows(inSection: indexPath.section) - 1 {
-            corners = [.bottomLeft, .bottomRight]
-        } else {
-            return
-        }
-        
-        let path = UIBezierPath(
-            roundedRect: cell.bounds,
-            byRoundingCorners: corners,
-            cornerRadii: CGSize(width: 16, height: 16)
-        )
-        let mask = CAShapeLayer()
-        mask.path = path.cgPath
-        cell.layer.mask = mask
-    }
-    
     // MARK: - Built-in popup (context menu) for deleting a category
     func tableView(_ tableView: UITableView,
                    contextMenuConfigurationForRowAt indexPath: IndexPath,
@@ -244,7 +219,7 @@ extension CategorySelectionViewController: UITableViewDataSource, UITableViewDel
         return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { [weak self] _ in
             guard let self = self else { return UIMenu() }
             let deleteAction = UIAction(
-                title: "Удалить",
+                title: NSLocalizedString("delete", comment: "Delete action"),
                 image: UIImage(systemName: "trash"),
                 attributes: .destructive
             ) { _ in

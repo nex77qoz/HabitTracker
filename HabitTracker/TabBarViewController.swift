@@ -13,9 +13,17 @@ final class TabBarViewController: UITabBarController {
     func setupTabBar() {
         let trackersNavController = UINavigationController(rootViewController: trackerVC)
         let statisticsNavController = UINavigationController(rootViewController: statsVC)
-
-        trackersNavController.tabBarItem = UITabBarItem(title: "Трекер", image: UIImage(named: "trackers"), tag: 0)
-        statisticsNavController.tabBarItem = UITabBarItem(title: "Статистика", image: UIImage(named: "stats"), tag: 1)
+        
+        trackersNavController.tabBarItem = UITabBarItem(
+            title: NSLocalizedString("tabTrackers", comment: ""),
+            image: UIImage(named: "trackers"),
+            tag: 0
+        )
+        statisticsNavController.tabBarItem = UITabBarItem(
+            title: NSLocalizedString("tabStatistics", comment: ""),
+            image: UIImage(named: "stats"),
+            tag: 1
+        )
 
         viewControllers = [trackersNavController, statisticsNavController]
     }
