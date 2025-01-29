@@ -41,16 +41,8 @@ final class FiltersViewController: UIViewController, UITableViewDataSource, UITa
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .background
-        
-        navigationItem.title = "Фильтры"
-        if navigationController == nil {
-            let closeButton = UIBarButtonItem(title: "Отмена",
-                                              style: .plain,
-                                              target: self,
-                                              action: #selector(cancelTapped))
-            navigationItem.leftBarButtonItem = closeButton
-        }
-        
+        tableView.backgroundColor = .background
+		        
         view.addSubview(tableView)
         view.addSubview(titleLabel)
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -68,10 +60,6 @@ final class FiltersViewController: UIViewController, UITableViewDataSource, UITa
         ])
     }
     
-    @objc private func cancelTapped() {
-        dismiss(animated: true)
-    }
-    
     // MARK: - UITableViewDataSource
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -85,6 +73,7 @@ final class FiltersViewController: UIViewController, UITableViewDataSource, UITa
         let item = filters[indexPath.row]
         cell.textLabel?.text = item.title
         cell.selectionStyle = .none
+        cell.backgroundColor = UIColor(named: "GrayBackground")
         
         if item.filter == selectedFilter {
             cell.accessoryType = .checkmark
