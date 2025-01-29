@@ -10,6 +10,20 @@ final class CreateEventViewController: UIViewController {
     
     private let isScheduled: Bool
     
+    // MARK: - UI: ScrollView & ContentView
+    
+    private let scrollView: UIScrollView = {
+        let scrollView = UIScrollView()
+        scrollView.showsVerticalScrollIndicator = true
+        scrollView.showsHorizontalScrollIndicator = false
+        return scrollView
+    }()
+    
+    private let contentView: UIView = {
+        let view = UIView()
+        return view
+    }()
+    
     // MARK: - Constants / Data
     
     private let nameTextFieldMaxLength = 38
@@ -43,13 +57,11 @@ final class CreateEventViewController: UIViewController {
         textField.layer.cornerRadius = 16
         textField.leftView = UIView(frame: CGRect(x: 0, y: 0, width: 16, height: 0))
         textField.leftViewMode = .always
-        
         let placeholderText = "Введите название трекера"
         let attributes: [NSAttributedString.Key: Any] = [
-            .foregroundColor: UIColor(named: "TextColor")
+            .foregroundColor: UIColor(named: "TextColor") ?? .darkText
         ]
         textField.attributedPlaceholder = NSAttributedString(string: placeholderText, attributes: attributes)
-        
         return textField
     }()
     
@@ -78,8 +90,8 @@ final class CreateEventViewController: UIViewController {
         let layout = UICollectionViewFlowLayout()
         layout.scrollDirection = .vertical
         layout.itemSize = CGSize(width: 52, height: 52)
-        layout.minimumInteritemSpacing = 8
-        layout.minimumLineSpacing = 8
+        layout.minimumInteritemSpacing = 0
+        layout.minimumLineSpacing = 0
         let collection = UICollectionView(frame: .zero, collectionViewLayout: layout)
         collection.register(EmojiCell.self, forCellWithReuseIdentifier: EmojiCell.identifier)
         collection.backgroundColor = .background
@@ -101,7 +113,7 @@ final class CreateEventViewController: UIViewController {
         let layout = UICollectionViewFlowLayout()
         layout.scrollDirection = .vertical
         layout.itemSize = CGSize(width: 52, height: 52)
-        layout.minimumInteritemSpacing = 5
+        layout.minimumInteritemSpacing = 0
         layout.minimumLineSpacing = 0
         let collection = UICollectionView(frame: .zero, collectionViewLayout: layout)
         collection.register(ColorCell.self, forCellWithReuseIdentifier: ColorCell.identifier)
@@ -156,15 +168,17 @@ final class CreateEventViewController: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = .background
         
-        titleLabel.text = isScheduled ? "Новая привычка" : "Новое нерегулярное событие"
+        view.addSubview(scrollView)
+        scrollView.addSubview(contentView)
         
-        view.addSubview(titleLabel)
-        view.addSubview(nameTextField)
-        view.addSubview(settingsTableView)
-        view.addSubview(emojiLabel)
-        view.addSubview(emojiCollectionView)
-        view.addSubview(colorLabel)
-        view.addSubview(colorCollectionView)
+        contentView.addSubview(titleLabel)
+        contentView.addSubview(nameTextField)
+        contentView.addSubview(settingsTableView)
+        contentView.addSubview(emojiLabel)
+        contentView.addSubview(emojiCollectionView)
+        contentView.addSubview(colorLabel)
+        contentView.addSubview(colorCollectionView)
+        
         view.addSubview(cancelButton)
         view.addSubview(createButton)
         
@@ -182,11 +196,16 @@ final class CreateEventViewController: UIViewController {
         colorCollectionView.delegate = self
         colorCollectionView.dataSource = self
         
+        titleLabel.text = isScheduled ? "Новая привычка" : "Новое нерегулярное событие"
+        
         setupConstraints()
         updateCreateButtonState()
     }
     
     private func setupConstraints() {
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+        
         [titleLabel,
          nameTextField,
          settingsTableView,
@@ -200,49 +219,64 @@ final class CreateEventViewController: UIViewController {
             $0.translatesAutoresizingMaskIntoConstraints = false
         }
         
-        emojiCollectionViewHeightConstraint = emojiCollectionView.heightAnchor.constraint(equalToConstant: 150)
+        emojiCollectionViewHeightConstraint = emojiCollectionView.heightAnchor.constraint(equalToConstant: 156)
         emojiCollectionViewHeightConstraint.isActive = true
         
-        colorCollectionViewHeightConstraint = colorCollectionView.heightAnchor.constraint(equalToConstant: 150)
+        colorCollectionViewHeightConstraint = colorCollectionView.heightAnchor.constraint(equalToConstant: 156)
         colorCollectionViewHeightConstraint.isActive = true
         
         NSLayoutConstraint.activate([
-            titleLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
-            titleLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            scrollView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: cancelButton.topAnchor, constant: -16),
+            
+            contentView.topAnchor.constraint(equalTo: scrollView.topAnchor),
+            contentView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
+            contentView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
+            contentView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
+            
+            contentView.widthAnchor.constraint(equalTo: scrollView.widthAnchor)
+        ])
+        
+        NSLayoutConstraint.activate([
+            titleLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 16),
+            titleLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
             
             nameTextField.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 16),
-            nameTextField.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
-            nameTextField.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            nameTextField.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            nameTextField.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
             nameTextField.heightAnchor.constraint(equalToConstant: 75),
             
             settingsTableView.topAnchor.constraint(equalTo: nameTextField.bottomAnchor, constant: 16),
-            settingsTableView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
-            settingsTableView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            settingsTableView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            settingsTableView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
             settingsTableView.heightAnchor.constraint(equalToConstant: isScheduled ? 150 : 75),
             
             emojiLabel.topAnchor.constraint(equalTo: settingsTableView.bottomAnchor, constant: 16),
-            emojiLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+            emojiLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 24),
             
             emojiCollectionView.topAnchor.constraint(equalTo: emojiLabel.bottomAnchor, constant: 8),
-            emojiCollectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
-            emojiCollectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+            emojiCollectionView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 24),
+            emojiCollectionView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -24),
             
             colorLabel.topAnchor.constraint(equalTo: emojiCollectionView.bottomAnchor, constant: 16),
-            colorLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+            colorLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 24),
             
             colorCollectionView.topAnchor.constraint(equalTo: colorLabel.bottomAnchor, constant: 8),
-            colorCollectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
-            colorCollectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
-            
-            cancelButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
-            cancelButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
-            cancelButton.heightAnchor.constraint(equalToConstant: 60),
-            cancelButton.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 0.45),
+            colorCollectionView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 24),
+            colorCollectionView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -24),
+            colorCollectionView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -16),
             
             createButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
-            createButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            createButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             createButton.heightAnchor.constraint(equalToConstant: 60),
-            createButton.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 0.45)
+            createButton.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 0.45),
+            
+            cancelButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
+            cancelButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            cancelButton.heightAnchor.constraint(equalToConstant: 60),
+            cancelButton.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 0.45)
         ])
     }
     
@@ -255,7 +289,7 @@ final class CreateEventViewController: UIViewController {
         }
     }
     
-    // MARK: - Actions
+    // MARK: - Actions & Logic
     
     @objc private func textFieldDidChange() {
         updateCreateButtonState()
@@ -289,11 +323,13 @@ final class CreateEventViewController: UIViewController {
         }()
         : nil
         
-        let newTracker = Tracker(id: UUID(),
-                                 name: name,
-                                 color: color,
-                                 emoji: emoji,
-                                 schedule: schedule)
+        let newTracker = Tracker(
+            id: UUID(),
+            name: name,
+            color: color,
+            emoji: emoji,
+            schedule: schedule
+        )
         
         NotificationCenter.default.post(
             name: .didCreateTracker,
@@ -318,8 +354,6 @@ final class CreateEventViewController: UIViewController {
         alert.addAction(UIAlertAction(title: "ОК", style: .default))
         present(alert, animated: true)
     }
-    
-    // MARK: - Helpers
     
     private func updateCreateButtonState() {
         let hasName = !(nameTextField.text?.trimmingCharacters(in: .whitespaces).isEmpty ?? true)
@@ -364,7 +398,7 @@ extension CreateEventViewController: UITableViewDataSource, UITableViewDelegate 
             if let category = selectedCategory {
                 let a = NSMutableAttributedString(
                     string: "Категория:",
-                    attributes: [.foregroundColor: UIColor(named: "TextColor")]
+                    attributes: [.foregroundColor: UIColor(named: "TextColor") ?? .darkText]
                 )
                 a.append(
                     NSAttributedString(
@@ -376,7 +410,7 @@ extension CreateEventViewController: UITableViewDataSource, UITableViewDelegate 
             } else {
                 cell.textLabel?.attributedText = NSAttributedString(
                     string: "Выбрать категорию",
-                    attributes: [.foregroundColor: UIColor(named: "TextColor")]
+                    attributes: [.foregroundColor: UIColor(named: "TextColor") ?? .darkText]
                 )
             }
             
@@ -384,7 +418,7 @@ extension CreateEventViewController: UITableViewDataSource, UITableViewDelegate 
             if selectedWeekdays.isEmpty {
                 cell.textLabel?.attributedText = NSAttributedString(
                     string: "Расписание",
-                    attributes: [.foregroundColor: UIColor(named: "TextColor")]
+                    attributes: [.foregroundColor: UIColor(named: "TextColor") ?? .darkText]
                 )
             } else {
                 let sortedDays = weekdays.filter { selectedWeekdays.contains($0) }
@@ -392,7 +426,7 @@ extension CreateEventViewController: UITableViewDataSource, UITableViewDelegate 
                 
                 let a = NSMutableAttributedString(
                     string: "Расписание:",
-                    attributes: [.foregroundColor: UIColor(named: "TextColor")]
+                    attributes: [.foregroundColor: UIColor(named: "TextColor") ?? .darkText]
                 )
                 a.append(
                     NSAttributedString(
@@ -521,8 +555,10 @@ extension CreateEventViewController: UITextFieldDelegate {
         let updatedText = currentText.replacingCharacters(in: stringRange, with: string)
         
         if updatedText.count > nameTextFieldMaxLength {
-            showErrorAlert("Превышен лимит символов",
-                           "Название трекера не может превышать \(nameTextFieldMaxLength) символов.")
+            showErrorAlert(
+                "Превышен лимит символов",
+                "Название трекера не может превышать \(nameTextFieldMaxLength) символов."
+            )
             return false
         }
         return true
