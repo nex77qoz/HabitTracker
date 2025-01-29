@@ -252,7 +252,20 @@ extension TrackerViewController: UICollectionViewDelegate {
                 }))
                 self?.present(alert, animated: true, completion: nil)
             }
-            return UIMenu(title: "", children: [deleteAction])
+            
+            let editAction = UIAction(
+                        title: "Редактировать",
+                        image: UIImage(systemName: "pencil")
+                    ) { [weak self] _ in
+                        guard let self = self else { return }
+                        let tracker = self.presenter.dailySections[indexPath.section].trackers[indexPath.item]
+                        
+                        let editVC = EditTrackerViewController(tracker: tracker)
+                        editVC.modalPresentationStyle = .pageSheet
+                        self.present(editVC, animated: true)
+                    }
+            
+            return UIMenu(title: "", children: [editAction, deleteAction])
         }
     }
 }
