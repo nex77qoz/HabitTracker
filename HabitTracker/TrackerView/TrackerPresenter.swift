@@ -6,28 +6,29 @@ protocol TrackerViewProtocol: AnyObject {
     func reloadItems(at indexPaths: [IndexPath])
 }
 
+enum TrackerFilter: Int {
+    case all         // Все трекеры
+    case today       // Трекеры на сегодня
+    case completed   // Завершённые
+    case incomplete  // Незавершённые
+}
+
 final class TrackerPresenter: NSObject {
     weak var view: TrackerViewProtocol?
+    
     private let trackerStore: TrackerStore
     private let recordStore: TrackerRecordStore
+    
+    private let pinnedCategoryTitle = "Закрепленные"
+    
     private var currentDate = Date()
+    private var searchText = ""
+    private(set) var currentFilter: TrackerFilter = .all
+    
+    private var visibleCategories: [(category: TrackerCategoryCoreData, trackers: [TrackerCoreData])] = []
     
     var dailySections: [(category: TrackerCategoryCoreData, trackers: [TrackerCoreData])] {
-        let all = trackerStore.trackers
-        let valid = all.filter { isTrackerValidForToday($0) }
-        
-        let groups = Dictionary(grouping: valid, by: { $0.category }).compactMap { pair -> (TrackerCategoryCoreData, [TrackerCoreData])? in
-            guard let category = pair.key else { return nil }
-            return (category, pair.value)
-        }
-        
-        let sortedGroups = groups.map { (cat, trackers) -> (TrackerCategoryCoreData, [TrackerCoreData]) in
-            let sortedTrackers = trackers.sorted { ($0.name ?? "") < ($1.name ?? "") }
-            return (cat, sortedTrackers)
-        }
-            .sorted { ($0.0.title ?? "") < ($1.0.title ?? "") }
-        
-        return sortedGroups
+        visibleCategories
     }
     
     init(view: TrackerViewProtocol) {
@@ -35,8 +36,11 @@ final class TrackerPresenter: NSObject {
         self.trackerStore = TrackerStore()
         self.recordStore = TrackerRecordStore()
         super.init()
+        
         trackerStore.delegate = self
         recordStore.delegate = self
+        
+        applySearchFilter()
         
         NotificationCenter.default.addObserver(
             self,
@@ -46,14 +50,37 @@ final class TrackerPresenter: NSObject {
         )
     }
     
+    // MARK: - Публичные методы
+    
+    func setFilter(_ filter: TrackerFilter) {
+        if filter == .today {
+            currentDate = Date()
+        }
+        currentFilter = filter
+        applySearchFilter()
+        view?.reloadCollectionView()
+        updatePlaceholderVisibility()
+    }
+    
+    func filter(with searchText: String) {
+        self.searchText = searchText.lowercased()
+        applySearchFilter()
+        view?.reloadCollectionView()
+        updatePlaceholderVisibility()
+    }
+    
     func datePickerValueChanged(date: Date) {
+        if currentFilter == .today {
+            currentFilter = .all
+        }
         currentDate = date
+        applySearchFilter()
         view?.reloadCollectionView()
         updatePlaceholderVisibility()
     }
     
     func updatePlaceholderVisibility() {
-        let hasTrackers = !dailySections.isEmpty
+        let hasTrackers = !visibleCategories.isEmpty
         view?.updatePlaceholderVisibility(isHidden: hasTrackers)
     }
     
@@ -82,21 +109,93 @@ final class TrackerPresenter: NSObject {
         }
     }
     
-    func isTrackerValidForToday(_ tracker: TrackerCoreData) -> Bool {
-        if tracker.isIrregular {
+    func deleteTracker(_ tracker: TrackerCoreData) {
+        do {
+            try trackerStore.deleteTracker(tracker)
+        } catch {
+            print("Error deleting tracker: \(error)")
+        }
+    }
+    
+    func hasAnyTrackersForSelectedDay() -> Bool {
+        return !visibleCategories.isEmpty
+    }
+    
+    // MARK: - Приватные методы
+    
+    private func applySearchFilter() {
+        let allTrackers = trackerStore.trackers
+        
+        let validTrackers = allTrackers.filter { isTrackerValidForSelectedDay($0) }
+        
+        let searched = validTrackers.filter { tracker in
+            guard let name = tracker.name else { return false }
+            return searchText.isEmpty || name.lowercased().contains(searchText)
+        }
+        
+        let pinnedTrackers = searched.filter { $0.isPinned }
+        let unpinnedTrackers = searched.filter { !$0.isPinned }
+        
+        var categories: [(TrackerCategoryCoreData, [TrackerCoreData])] = []
+        
+        if !pinnedTrackers.isEmpty {
+            let pinnedCategory = TrackerCategoryCoreData(context: CoreDataManager.shared.context)
+            pinnedCategory.title = pinnedCategoryTitle
+            categories.append((pinnedCategory, pinnedTrackers))
+        }
+        
+        let unpinnedGroups = Dictionary(grouping: unpinnedTrackers, by: { $0.category }).compactMap { pair -> (TrackerCategoryCoreData, [TrackerCoreData])? in
+            guard let category = pair.key else { return nil }
+            return (category, pair.value)
+        }
+        
+        let sortedGroups = unpinnedGroups.map { (cat, trackers) -> (TrackerCategoryCoreData, [TrackerCoreData]) in
+            let sortedTrackers = trackers.sorted { ($0.name ?? "") < ($1.name ?? "") }
+            return (cat, sortedTrackers)
+        }
+        .sorted { ($0.0.title ?? "") < ($1.0.title ?? "") }
+        
+        categories.append(contentsOf: sortedGroups)
+        
+        visibleCategories = categories
+    }
+    
+    func togglePinned(for tracker: TrackerCoreData) {
+        do {
+            try trackerStore.togglePinned(for: tracker)
+            applySearchFilter()
+            view?.reloadCollectionView()
+        } catch {
+            print("Error toggling pin status: \(error)")
+        }
+    }
+    
+    private func isTrackerValidForSelectedDay(_ tracker: TrackerCoreData) -> Bool {
+        if !tracker.isIrregular {
+            guard
+                let data = tracker.schedule as? Data,
+                let schedule = try? JSONDecoder().decode(Schedule.self, from: data)
+            else {
+                return false
+            }
+            
+            let systemWeekday = Calendar.current.component(.weekday, from: currentDate)
+            let weekdayIndex = (systemWeekday + 5) % 7
+            if !schedule.daysOfWeek[weekdayIndex] {
+                return false
+            }
+        }
+        
+        switch currentFilter {
+        case .all:
             return true
+        case .today:
+            return true
+        case .completed:
+            return recordFor(tracker, on: currentDate.startOfDay()) != nil
+        case .incomplete:
+            return recordFor(tracker, on: currentDate.startOfDay()) == nil
         }
-        guard
-            let data = tracker.schedule as? Data,
-            let schedule = try? JSONDecoder().decode(Schedule.self, from: data)
-        else {
-            return false
-        }
-        
-        let systemWeekday = Calendar.current.component(.weekday, from: currentDate)
-        let weekdayIndex = (systemWeekday + 5) % 7
-        
-        return schedule.daysOfWeek[weekdayIndex]
     }
     
     private func recordFor(_ tracker: TrackerCoreData, on date: Date) -> TrackerRecordCoreData? {
@@ -108,14 +207,6 @@ final class TrackerPresenter: NSObject {
     
     private func totalDaysCompleted(_ tracker: TrackerCoreData) -> Int {
         recordStore.records.filter { $0.trackerId == tracker.id }.count
-    }
-    
-    func deleteTracker(_ tracker: TrackerCoreData) {
-        do {
-            try trackerStore.deleteTracker(tracker)
-        } catch {
-            print("Error deleting tracker: \(error)")
-        }
     }
 }
 
@@ -130,16 +221,17 @@ extension TrackerPresenter: TrackerStoreDelegate, TrackerRecordStoreDelegate {
 // MARK: - UICollectionView DataSource
 extension TrackerPresenter: UICollectionViewDataSource {
     func numberOfSections(in collectionView: UICollectionView) -> Int {
-        dailySections.count
+        visibleCategories.count
     }
     
     func collectionView(_ collectionView: UICollectionView,
                         numberOfItemsInSection section: Int) -> Int {
-        dailySections[section].trackers.count
+        visibleCategories[section].trackers.count
     }
     
     func collectionView(_ collectionView: UICollectionView,
                         cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        let (_, trackers) = visibleCategories[indexPath.section]
         guard let cell = collectionView.dequeueReusableCell(
             withReuseIdentifier: TrackerCell.identifier,
             for: indexPath
@@ -147,7 +239,6 @@ extension TrackerPresenter: UICollectionViewDataSource {
             return UICollectionViewCell()
         }
         
-        let (_, trackers) = dailySections[indexPath.section]
         let tracker = trackers[indexPath.item]
         let day = currentDate.startOfDay()
         let isCompleted = (recordFor(tracker, on: day) != nil)
@@ -166,7 +257,7 @@ extension TrackerPresenter: UICollectionViewDataSource {
     }
 }
 
-// MARK: - UICollectionView Delegate Flow Layout
+// MARK: - UICollectionViewDelegateFlowLayout
 extension TrackerPresenter: UICollectionViewDelegateFlowLayout {
     func collectionView(_ collectionView: UICollectionView,
                         layout collectionViewLayout: UICollectionViewLayout,
@@ -174,12 +265,6 @@ extension TrackerPresenter: UICollectionViewDelegateFlowLayout {
         let totalSpacing: CGFloat = 48
         let width = (collectionView.frame.width - totalSpacing) / 2
         return CGSize(width: width, height: 175)
-    }
-    
-    func collectionView(_ collectionView: UICollectionView,
-                        layout collectionViewLayout: UICollectionViewLayout,
-                        referenceSizeForHeaderInSection section: Int) -> CGSize {
-        CGSize(width: collectionView.frame.width, height: 50)
     }
 }
 
@@ -199,21 +284,17 @@ extension TrackerPresenter {
             return UICollectionReusableView()
         }
         
-        let (category, _) = dailySections[indexPath.section]
+        let (category, _) = visibleCategories[indexPath.section]
         header.titleLabel.text = category.title
         return header
     }
 }
 
-// MARK: - TrackerCell Delegate
+// MARK: - TrackerCellDelegate
 extension TrackerPresenter: TrackerCellDelegate {
     func trackerCell(_ cell: TrackerCell,
                      didToggleCompletionFor tracker: TrackerCoreData,
                      at indexPath: IndexPath) {
         toggleTrackerCompletion(for: tracker, at: indexPath)
-    }
-    
-    func trackerCell(_ cell: TrackerCell, didRequestDeleteFor tracker: TrackerCoreData) {
-        deleteTracker(tracker)
     }
 }

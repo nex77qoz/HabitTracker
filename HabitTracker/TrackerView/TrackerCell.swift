@@ -50,7 +50,7 @@ final class TrackerCell: UICollectionViewCell {
     private let daysLabel: UILabel = {
         let label = UILabel()
         label.font = UIFont.systemFont(ofSize: 14, weight: .medium)
-        label.textColor = .black
+        label.textColor = UIColor(named: "TextColor")
         return label
     }()
     
@@ -83,6 +83,10 @@ final class TrackerCell: UICollectionViewCell {
     @objc private func completeButtonTapped() {
         guard let indexPath = indexPath, let tracker = tracker else { return }
         delegate?.trackerCell(self, didToggleCompletionFor: tracker, at: indexPath)
+        
+        logAndReportEvent(event: "click",
+                              screen: "Main",
+                              item: "track")
     }
     
     required init?(coder: NSCoder) {
@@ -162,7 +166,11 @@ final class TrackerCell: UICollectionViewCell {
         
         let title = completed ? "✓" : "+"
         completeButton.setTitle(title, for: .normal)
-        daysLabel.text = "\(daysCount) дней"
+        let daysText = String.localizedStringWithFormat(
+          NSLocalizedString("daysCount", tableName: "daysCount", comment: ""),
+          daysCount
+        )
+        daysLabel.text = daysText
         self.isFutureDate = isFutureDate
         
         if isFutureDate {

@@ -1,13 +1,13 @@
 import UIKit
 
-class TrackerHeaderView: UICollectionReusableView {
+final class TrackerHeaderView: UICollectionReusableView {
     
     static let identifier = "TrackerHeaderView"
     
     let titleLabel: UILabel = {
         let label = UILabel()
         label.font = .systemFont(ofSize: 19, weight: .bold)
-        label.textColor = .black
+        label.textColor = UIColor(named: "TextColor")
         return label
     }()
     

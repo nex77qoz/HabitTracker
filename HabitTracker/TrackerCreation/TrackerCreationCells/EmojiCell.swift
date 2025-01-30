@@ -23,7 +23,7 @@ class EmojiCell: UICollectionViewCell {
         contentView.addSubview(selectionView)
         contentView.addSubview(emojiLabel)
         
-        selectionView.backgroundColor = UIColor.lightGray
+        selectionView.backgroundColor = .grayBackground
         selectionView.layer.cornerRadius = 16
         selectionView.isHidden = true
         
